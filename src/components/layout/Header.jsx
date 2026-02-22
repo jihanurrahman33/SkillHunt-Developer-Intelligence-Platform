@@ -1,28 +1,17 @@
 'use client';
 
-import { useState } from 'react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { HiOutlineSearch, HiOutlineBell, HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { HiOutlineBell, HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
 
 export default function Header() {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-surface px-4">
-      {/* Search */}
-      <div className="relative w-full max-w-sm">
-        <HiOutlineSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search developers, campaigns..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-md border border-border bg-background py-1.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        />
-      </div>
+      {/* Empty Left Section to maintain spacing for the Right Section */}
+      <div className="flex-1"></div>
 
       {/* Right Section */}
       <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   fetchDevelopers, 
   ingestDeveloper, 
@@ -14,8 +15,10 @@ export default function useDevelopers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  const searchParams = useSearchParams();
+  
   // Filters
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [techStack, setTechStack] = useState('');
   const [location, setLocation] = useState('');
   const [status, setStatus] = useState('');
@@ -55,6 +58,14 @@ export default function useDevelopers() {
   useEffect(() => {
     loadDevelopers();
   }, [loadDevelopers]);
+
+  // Sync state if URL changes
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query !== null && query !== search) {
+      setSearch(query);
+    }
+  }, [searchParams]);
 
   const changeStatus = async (id, newStatus) => {
     try {

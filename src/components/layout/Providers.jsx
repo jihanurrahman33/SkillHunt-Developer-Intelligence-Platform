@@ -1,5 +1,7 @@
 'use client';
 
+import { Suspense } from 'react';
+
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/features/auth/context/AuthContext';
@@ -11,11 +13,13 @@ export default function Providers({ children, session }) {
     <SessionProvider session={session}>
       <ThemeProvider>
         <AuthProvider>
-          <DeveloperProvider>
-            <CampaignProvider>
-              {children}
-            </CampaignProvider>
-          </DeveloperProvider>
+          <Suspense fallback={null}>
+            <DeveloperProvider>
+              <CampaignProvider>
+                {children}
+              </CampaignProvider>
+            </DeveloperProvider>
+          </Suspense>
         </AuthProvider>
       </ThemeProvider>
     </SessionProvider>
