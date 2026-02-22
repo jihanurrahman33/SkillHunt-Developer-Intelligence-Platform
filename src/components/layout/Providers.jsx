@@ -5,9 +5,9 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/features/auth/context/AuthContext';
 import { DeveloperProvider } from '@/features/developers/context/DeveloperContext';
 
-export default function Providers({ children }) {
+export default function Providers({ children, session }) {
   return (
-    <SessionProvider>
+    <SessionProvider session={session}>
       <ThemeProvider>
         <AuthProvider>
           <DeveloperProvider>
