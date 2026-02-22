@@ -13,6 +13,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ProfileSkeleton from '@/components/ui/ProfileSkeleton';
 import ErrorDisplay from '@/components/ui/ErrorDisplay';
+import ActivityFeed from '@/features/developers/components/ActivityFeed';
 import Link from 'next/link';
 import Swal from 'sweetalert2';
 import { 
@@ -251,6 +252,16 @@ export default function DeveloperProfile({ id }) {
             Overview
           </button>
           <button
+            onClick={() => setActiveTab('activity')}
+            className={`py-3 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'activity' 
+                ? 'border-primary text-primary' 
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Activity Feed
+          </button>
+          <button
             onClick={() => setActiveTab('notes')}
             className={`flex items-center gap-2 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'notes' 
@@ -369,6 +380,13 @@ export default function DeveloperProfile({ id }) {
               )}
             </Card>
           </div>
+        </div>
+      ) : activeTab === 'activity' ? (
+        /* Activity Tab Content */
+        <div className="md:col-span-3">
+          <Card title="Timeline" subtitle="Live updates sourced from background synchronization">
+            <ActivityFeed developerId={id} />
+          </Card>
         </div>
       ) : (
         /* Notes Tab Content */

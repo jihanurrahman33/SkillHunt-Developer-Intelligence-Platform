@@ -225,7 +225,15 @@ export default function DeveloperList() {
                             <FaGithub className="h-3.5 w-3.5" />
                           </a>
                         </div>
-                        <p className="text-xs text-muted-foreground">@{dev.username}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-xs text-muted-foreground">@{dev.username}</p>
+                          {dev.lastActivityAt && (
+                            <span className="text-[10px] bg-secondary border border-border text-secondary-foreground px-1.5 py-0.5 rounded-sm flex items-center gap-1 font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+                              Active {new Date(dev.lastActivityAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
