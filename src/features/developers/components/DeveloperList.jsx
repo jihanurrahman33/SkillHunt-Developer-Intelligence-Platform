@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDeveloperContext } from '@/features/developers/context/DeveloperContext';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -9,13 +9,15 @@ import Select from '@/components/ui/Select';
 import Modal from '@/components/modals/Modal';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
+import { fetchDevelopers } from '@/features/developers/services/developer.service';
 import { 
   HiOutlineSearch, 
   HiOutlinePlus, 
   HiOutlineLocationMarker,
   HiOutlineCode,
   HiOutlineExternalLink,
-  HiOutlineTrash
+  HiOutlineTrash,
+  HiOutlineDownload
 } from 'react-icons/hi';
 import { FaGithub } from 'react-icons/fa';
 
@@ -25,6 +27,12 @@ const STATUS_OPTIONS = [
   { value: 'interviewing', label: 'Interviewing' },
   { value: 'hired', label: 'Hired' },
   { value: 'rejected', label: 'Rejected' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'createdAt_desc', label: 'Recently Added' },
+  { value: 'activityScore_desc', label: 'Score: High to Low' },
+  { value: 'activityScore_asc', label: 'Score: Low to High' },
 ];
 
 export default function DeveloperList() {
@@ -37,6 +45,8 @@ export default function DeveloperList() {
     techStack, setTechStack,
     location, setLocation,
     status, setStatus,
+    sortBy, setSortBy,
+    sortOrder, setSortOrder,
     page, setPage,
     importDeveloper,
     changeStatus,
@@ -47,32 +57,210 @@ export default function DeveloperList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [githubUsername, setGithubUsername] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  
+  // Bulk Selection State
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+
+  // Clear selections when filters or page change
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [page, search, techStack, location, status]);
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(developers.map(d => d._id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectRow = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+  
+  // Export State
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      let data = [];
+      
+      if (selectedIds.length > 0) {
+        // Export only selected rows from current view
+        data = developers.filter(dev => selectedIds.includes(dev._id));
+      } else {
+        // Fetch up to 10k results ignoring pagination to get a full export of current filter
+        const res = await fetchDevelopers({
+          page: 1,
+          limit: 10000,
+          sortBy: 'createdAt',
+          sortOrder: -1,
+          search,
+          techStack,
+          location,
+          status,
+        });
+        data = res.developers || [];
+      }
+
+      if (data.length === 0) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Empty Export',
+          text: 'There are no developers matching the current filters to export.',
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+        setIsExporting(false);
+        return;
+      }
+
+      // Build CSV
+      const headers = ['Name', 'Username', 'Source', 'Location', 'Company', 'Activity Score', 'Top Skills', 'Status', 'CreatedAt'];
+      const csvRows = [headers.join(',')];
+
+      for (const dev of data) {
+        const row = [
+          `"${(dev.name || '').replace(/"/g, '""')}"`,
+          `"${(dev.username || '').replace(/"/g, '""')}"`,
+          `"${(dev.sourceUrl || '').replace(/"/g, '""')}"`,
+          `"${(dev.location || '').replace(/"/g, '""')}"`,
+          `"${(dev.company || '').replace(/"/g, '""')}"`,
+          dev.activityScore || 0,
+          `"${(dev.techStack || []).join(', ').replace(/"/g, '""')}"`,
+          `"${dev.currentStatus || 'new'}"`,
+          `"${new Date(dev.createdAt).toISOString().split('T')[0]}"`,
+        ];
+        csvRows.push(row.join(','));
+      }
+
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `developers_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Failed',
+        text: err.message,
+        background: '#0B1220',
+        color: '#e2e8f0',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleImport = async (e) => {
     e.preventDefault();
     if (!githubUsername.trim()) return;
 
     setIsImporting(true);
-    const res = await importDeveloper(githubUsername.trim());
+    
+    // Split by comma or newline, extract usernames from URLs, and remove empty strings
+    const usernames = githubUsername
+      .split(/[\n,]+/)
+      .map(u => {
+        let text = u.trim();
+        // Extract from URL (e.g. https://github.com/username)
+        const match = text.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)/i);
+        if (match && match[1]) return match[1];
+        
+        // Handle @username format
+        if (text.startsWith('@')) return text.substring(1);
+        
+        // Handle stray trailing slashes
+        if (text.endsWith('/')) return text.slice(0, -1);
+        
+        return text.toLowerCase();
+      })
+      .filter(Boolean);
+      
+    // Remove duplicates from the pasted list
+    const uniqueUsernames = [...new Set(usernames)];
+    
+    if (uniqueUsernames.length === 0) {
+      setIsImporting(false);
+      return;
+    }
+
+    let successCount = 0;
+    let newCount = 0;
+    let updateCount = 0;
+    let failCount = 0;
+    const failedNames = [];
+
+    // Import sequentially to avoid hitting GitHub API rate limits simultaneously
+    for (const username of uniqueUsernames) {
+      const res = await importDeveloper(username);
+      if (res.success) {
+        successCount++;
+        if (res.data?.message?.includes('imported')) {
+          newCount++;
+        } else {
+          updateCount++;
+        }
+      } else {
+        failCount++;
+        failedNames.push(username);
+      }
+    }
+
     setIsImporting(false);
 
-    if (res.success) {
+    if (successCount > 0) {
       setIsModalOpen(false);
       setGithubUsername('');
-      Swal.fire({
-        icon: 'success',
-        title: 'Developer Imported',
-        text: `${githubUsername} has been added to the database.`,
-        timer: 2000,
-        showConfirmButton: false,
-        background: '#0B1220',
-        color: '#e2e8f0',
-      });
+      
+      const duplicateCount = usernames.length - uniqueUsernames.length;
+      let duplicateMsg = duplicateCount > 0 ? ` (Skipped ${duplicateCount} duplicate entries in input)` : '';
+
+      if (uniqueUsernames.length === 1 && failCount === 0) {
+        // Single user import formatting
+        const isNew = newCount === 1;
+        Swal.fire({
+          icon: isNew ? 'success' : 'info',
+          title: isNew ? 'Developer Imported' : 'Already Tracked',
+          text: (isNew 
+            ? `${uniqueUsernames[0]} has been added to the database.` 
+            : `${uniqueUsernames[0]} is already in your talent pool. Profile data has been refreshed.`) + duplicateMsg,
+          timer: 3000,
+          showConfirmButton: false,
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      } else {
+        // Bulk or mixed results formatting
+        let msg = `Successfully processed ${successCount} unique developer(s). (${newCount} new, ${updateCount} updated).`;
+        if (duplicateCount > 0) msg += `\nSkipped ${duplicateCount} duplicate entries.`;
+        if (failCount > 0) msg += `\nFailed to import: ${failedNames.join(', ')}`;
+
+        Swal.fire({
+          icon: failCount > 0 ? 'warning' : 'success',
+          title: 'Import Complete',
+          text: msg,
+          timer: failCount > 0 ? 5000 : 3000,
+          showConfirmButton: failCount > 0,
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      }
     } else {
       Swal.fire({
         icon: 'error',
         title: 'Import Failed',
-        text: res.error,
+        text: `Failed to import all developers. Errors on: ${failedNames.join(', ')}`,
         background: '#0B1220',
         color: '#e2e8f0',
         confirmButtonColor: '#2563EB',
@@ -154,16 +342,27 @@ export default function DeveloperList() {
             {pagination ? `${pagination.total} developers found` : 'Manage your talent pool'}
           </p>
         </div>
-        <Button 
-          onClick={() => setIsModalOpen(true)}
-          icon={<HiOutlinePlus className="h-4 w-4" />}
-        >
-          Import from GitHub
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline"
+            onClick={handleExportCSV}
+            disabled={isExporting}
+            loading={isExporting}
+            icon={!isExporting && <HiOutlineDownload className="h-4 w-4" />}
+          >
+            {selectedIds.length > 0 ? `Export (${selectedIds.length})` : 'Export CSV'}
+          </Button>
+          <Button 
+            onClick={() => setIsModalOpen(true)}
+            icon={<HiOutlinePlus className="h-4 w-4" />}
+          >
+            Import from GitHub
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Input
           placeholder="Search name, bio..."
           icon={<HiOutlineSearch className="h-4 w-4" />}
@@ -174,7 +373,7 @@ export default function DeveloperList() {
           }}
         />
         <Input
-          placeholder="Tech Stack (e.g. React, Node)"
+          placeholder="Top Skills (e.g. React, Node)"
           icon={<HiOutlineCode className="h-4 w-4" />}
           value={techStack}
           onChange={(e) => {
@@ -200,13 +399,108 @@ export default function DeveloperList() {
           }}
           placeholder="All Statuses"
         />
+        <Select
+          options={SORT_OPTIONS}
+          value={`${sortBy}_${sortOrder === -1 ? 'desc' : 'asc'}`}
+          onChange={(e) => {
+            const [newSortBy, newSortOrderStr] = e.target.value.split('_');
+            setSortBy(newSortBy);
+            setSortOrder(newSortOrderStr === 'desc' ? -1 : 1);
+            setPage(1);
+          }}
+          placeholder="Sort By..."
+        />
       </div>
+
+      {/* Bulk Actions Banner */}
+      {selectedIds.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary-foreground sm:flex-nowrap">
+          <div className="flex items-center gap-2 font-medium shrink-0">
+            <Badge variant="default" className="text-xs bg-primary text-primary-foreground">{selectedIds.length}</Badge>
+            <span className="text-foreground">Developer(s) selected</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+            <Select
+              options={[{ value: '', label: 'Change Status...' }, ...STATUS_OPTIONS]}
+              value=""
+              onChange={async (e) => {
+                const newStatus = e.target.value;
+                if (!newStatus) return;
+                
+                setIsBulkActionLoading(true);
+                let successCount = 0;
+                for (const id of selectedIds) {
+                  const res = await changeStatus(id, newStatus);
+                  if (res.success) successCount++;
+                }
+                setIsBulkActionLoading(false);
+                setSelectedIds([]);
+                
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Bulk Update',
+                  text: `Updated ${successCount} developer(s)`,
+                  toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
+                  background: '#0B1220', color: '#e2e8f0',
+                });
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                const confirm = await Swal.fire({
+                  title: 'Are you sure?',
+                  text: `You are about to delete ${selectedIds.length} developer(s).`,
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#ef4444',
+                  confirmButtonText: 'Yes, delete them!',
+                  background: '#0B1220', color: '#e2e8f0',
+                });
+
+                if (confirm.isConfirmed) {
+                  setIsBulkActionLoading(true);
+                  let successCount = 0;
+                  for (const id of selectedIds) {
+                    const res = await removeDeveloper(id);
+                    if (res.success) successCount++;
+                  }
+                  setIsBulkActionLoading(false);
+                  setSelectedIds([]);
+                  
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: `Removed ${successCount} developer(s)`,
+                    toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
+                    background: '#0B1220', color: '#e2e8f0',
+                  });
+                }
+              }}
+              loading={isBulkActionLoading}
+              className="border-danger/20 bg-danger/10 text-danger hover:bg-danger hover:text-white"
+              icon={<HiOutlineTrash className="h-4 w-4" />}
+            >
+              Delete Selected
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full text-left text-sm text-foreground">
           <thead className="border-b border-border bg-secondary/50 text-xs uppercase text-muted-foreground">
             <tr>
+              <th className="px-4 py-3 font-medium w-10">
+                <input 
+                  type="checkbox"
+                  className="rounded border-border bg-background checked:bg-primary"
+                  checked={developers.length > 0 && selectedIds.length === developers.length}
+                  onChange={handleSelectAll}
+                />
+              </th>
               <th className="px-4 py-3 font-medium">Developer</th>
               <th className="hidden px-4 py-3 font-medium sm:table-cell">Location</th>
               <th className="hidden px-4 py-3 font-medium md:table-cell">Top Skills</th>
@@ -219,6 +513,7 @@ export default function DeveloperList() {
             {loading ? (
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="animate-pulse bg-surface">
+                  <td className="px-4 py-4"><div className="h-4 w-4 rounded bg-muted" /></td>
                   <td className="px-4 py-4"><div className="h-10 w-48 rounded bg-muted" /></td>
                   <td className="hidden px-4 py-4 sm:table-cell"><div className="h-4 w-24 rounded bg-muted" /></td>
                   <td className="hidden px-4 py-4 md:table-cell"><div className="h-6 w-32 rounded bg-muted" /></td>
@@ -229,13 +524,21 @@ export default function DeveloperList() {
               ))
             ) : developers.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                   No developers found. Try changing your filters or import a new one.
                 </td>
               </tr>
             ) : (
               developers.map((dev) => (
-                <tr key={dev._id} className="transition-colors hover:bg-surface-hover group">
+                <tr key={dev._id} className={`transition-colors hover:bg-surface-hover group ${selectedIds.includes(dev._id) ? 'bg-primary/5' : ''}`}>
+                  <td className="px-4 py-3">
+                    <input 
+                      type="checkbox"
+                      className="rounded border-border bg-background checked:bg-primary"
+                      checked={selectedIds.includes(dev._id)}
+                      onChange={() => handleSelectRow(dev._id)}
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {dev.avatarUrl ? (
@@ -392,20 +695,26 @@ export default function DeveloperList() {
         title="Import Developer"
       >
         <form onSubmit={handleImport} className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Enter a GitHub username to automatically fetch their profile, calculate their activity score, and add them to your talent pool.
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            Enter one or more GitHub usernames or profile URLs (separated by commas or new lines) to automatically fetch their profiles, calculate their activity scores, and add them to your talent pool.
           </p>
           
-          <Input
-            label="GitHub Username"
-            placeholder="e.g. torvalds"
-            icon={<FaGithub className="h-4 w-4" />}
-            value={githubUsername}
-            onChange={(e) => setGithubUsername(e.target.value)}
-            disabled={isImporting}
-            required
-            autoFocus
-          />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">GitHub Usernames or URLs</label>
+            <div className="relative">
+              <FaGithub className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <textarea
+                placeholder="torvalds, https://github.com/gaearon, @yyx990803"
+                value={githubUsername}
+                onChange={(e) => setGithubUsername(e.target.value)}
+                disabled={isImporting}
+                required
+                autoFocus
+                rows={4}
+                className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+              />
+            </div>
+          </div>
           
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button

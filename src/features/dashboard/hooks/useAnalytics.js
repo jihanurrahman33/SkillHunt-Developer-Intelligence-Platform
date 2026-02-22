@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { fetchAnalyticsData } from '../services/analytics.service';
 import Swal from 'sweetalert2';
 
 export function useAnalytics() {
+  const { isAuthenticated, user } = useAuth();
+  
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const loadAnalytics = async () => {
+    if (!isAuthenticated || !user?.id) {
+      setData(null);
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
@@ -39,7 +47,7 @@ export function useAnalytics() {
     const intervalId = setInterval(loadAnalytics, 300000);
     
     return () => clearInterval(intervalId);
-  }, []);
+  }, [user?.id, isAuthenticated]);
 
   return { data, loading, error, refresh: loadAnalytics };
 }

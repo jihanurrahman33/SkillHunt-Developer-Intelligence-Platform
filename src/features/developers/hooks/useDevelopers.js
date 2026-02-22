@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+
 import { useSearchParams } from 'next/navigation';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { 
   fetchDevelopers, 
   ingestDeveloper, 
@@ -10,6 +12,7 @@ import {
 } from '@/features/developers/services/developer.service';
 
 export default function useDevelopers() {
+  const { user } = useAuth();
   const [developers, setDevelopers] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,8 +59,10 @@ export default function useDevelopers() {
   }, [page, limit, sortBy, sortOrder, search, techStack, location, status]);
 
   useEffect(() => {
-    loadDevelopers();
-  }, [loadDevelopers]);
+    if (user?.id) {
+      loadDevelopers();
+    }
+  }, [loadDevelopers, user?.id]);
 
   // Sync state if URL changes
   useEffect(() => {

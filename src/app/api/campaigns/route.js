@@ -13,6 +13,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const filters = {
+      userId: auth.user.id,
       status: searchParams.get('status') || undefined,
       search: searchParams.get('search') || undefined,
     };

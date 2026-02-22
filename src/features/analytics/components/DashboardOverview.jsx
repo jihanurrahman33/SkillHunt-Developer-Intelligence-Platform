@@ -16,6 +16,10 @@ const ActivityTimelineChart = dynamic(() => import('./ActivityTimelineChart'), {
   ssr: false, 
   loading: () => <div className="h-[400px] flex items-center justify-center border border-border rounded-xl bg-surface animate-pulse text-muted-foreground">Loading chart...</div> 
 });
+const TopTechChart = dynamic(() => import('./TopTechChart'), { 
+  ssr: false, 
+  loading: () => <div className="h-[400px] flex items-center justify-center border border-border rounded-xl bg-surface animate-pulse text-muted-foreground">Loading chart...</div> 
+});
 
 import { 
   HiOutlineUserGroup, 
@@ -60,7 +64,7 @@ export default function DashboardOverview() {
     );
   }
 
-  const { kpis, statusDistribution, activityTimeline } = data || {};
+  const { kpis, statusDistribution, activityTimeline, topTechStack } = data || {};
 
   return (
     <div className="space-y-6">
@@ -122,10 +126,7 @@ export default function DashboardOverview() {
       {/* Charts Level 2 */}
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2">
-          {/* This empty area could host top tech stacks or campaign ROI in Phase 8 */}
-          <div className="h-full min-h-[400px] flex items-center justify-center border border-dashed border-border rounded-xl bg-surface/50 text-muted-foreground text-sm">
-            Top technologies / campaign ROI placeholder
-          </div>
+          <TopTechChart data={topTechStack} />
         </div>
         <div className="md:col-span-1">
           <div className="h-[400px]">

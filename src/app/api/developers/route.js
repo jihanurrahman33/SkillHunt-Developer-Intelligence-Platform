@@ -21,6 +21,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const result = await findDevelopers({
+      userId: auth.user.id,
       search,
       techStack,
       location,

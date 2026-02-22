@@ -5,7 +5,7 @@ import connectToDatabase from '@/lib/db';
  * Fetches aggregated analytics data for the dashboard.
  * Uses a single $facet pipeline to compute all metrics concurrently.
  */
-export async function getDashboardAnalytics() {
+export async function getDashboardAnalytics(userId) {
   const db = await connectToDatabase();
   
   // We'll aggregate across multiple collections, but developers is the main one
@@ -13,10 +13,11 @@ export async function getDashboardAnalytics() {
   const campaignsCollection = db.collection('campaigns');
   
   // 1. Get Campaign Stats (Separate query since it's a different collection)
-  const campaignsCount = await campaignsCollection.countDocuments({ status: 'active' });
+  const campaignsCount = await campaignsCollection.countDocuments({ status: 'active', 'createdBy.id': userId });
 
   // 2. Main Aggregation Pipeline on Developers
   const pipeline = [
+    { $match: { addedBy: userId } },
     {
       $facet: {
         // KPI: Total Developers
@@ -86,6 +87,16 @@ export async function getDashboardAnalytics() {
   
   const activityTimeline = await activityLogsCollection.aggregate([
     { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+    {
+      $lookup: {
+        from: 'developers',
+        localField: 'developerId',
+        foreignField: '_id',
+        as: 'developer'
+      }
+    },
+    { $unwind: '$developer' },
+    { $match: { 'developer.addedBy': userId } },
     {
       $group: {
         _id: {

@@ -9,7 +9,7 @@ const CampaignContext = createContext();
 const API_BASE = '/api/campaigns';
 
 export function CampaignProvider({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,10 @@ export function CampaignProvider({ children }) {
   const [status, setStatus] = useState('');
 
   const fetchCampaigns = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user?.id) {
+      setCampaigns([]);
+      return;
+    }
     
     setLoading(true);
     setError(null);
@@ -40,7 +43,7 @@ export function CampaignProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, search, status]);
+  }, [isAuthenticated, user?.id, search, status]);
 
   useEffect(() => {
     fetchCampaigns();

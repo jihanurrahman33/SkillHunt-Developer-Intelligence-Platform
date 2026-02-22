@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
 import { verifyAuth, apiError, apiSuccess } from '@/lib/api-guard';
 import { getDashboardAnalytics } from '@/lib/repositories/analytics.repository';
 
@@ -9,7 +10,8 @@ export async function GET(request) {
   if (auth.error) return auth.error;
 
   try {
-    const analyticsData = await getDashboardAnalytics();
+    console.log('Analytics API called by auth.user.id:', auth.user.id);
+    const analyticsData = await getDashboardAnalytics(auth.user.id);
     return apiSuccess(analyticsData);
   } catch (error) {
     console.error('Analytics API Error:', error);

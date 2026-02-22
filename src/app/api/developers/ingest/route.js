@@ -57,6 +57,7 @@ export async function POST(request) {
       location: githubData.location,
       company: githubData.company,
       blog: githubData.blog,
+      addedBy: auth.user.id,
       techStack,
       languages: githubData.languages,
       topRepos: githubData.topRepos,

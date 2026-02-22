@@ -24,6 +24,8 @@ export async function getCampaigns(filters = {}) {
   const db = await connectToDatabase();
   const query = {};
 
+  if (filters.userId) query['createdBy.id'] = filters.userId;
+
   if (filters.status) query.status = filters.status;
   if (filters.search) {
     query.$or = [

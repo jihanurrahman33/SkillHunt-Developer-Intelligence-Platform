@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Card from '@/components/ui/Card';
 
@@ -12,11 +13,26 @@ export default function ActivityTimelineChart({ data = [] }) {
     );
   }
 
+  const paddedData = useMemo(() => {
+    const result = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const existing = data.find(item => item.date === dateStr);
+      result.push({
+        date: dateStr,
+        count: existing ? existing.count : 0
+      });
+    }
+    return result;
+  }, [data]);
+
   return (
     <Card title="Developer Network Activity" subtitle="Timeline of detected spikes & changes (30 days)" className="h-[400px] flex flex-col">
-       <div className="flex-1 w-full pr-4 mt-6 min-h-[300px]">
+      <div className="flex-1 w-full pr-4 mt-6 min-h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart data={paddedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>

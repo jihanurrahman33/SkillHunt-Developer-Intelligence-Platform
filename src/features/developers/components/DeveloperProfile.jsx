@@ -352,7 +352,7 @@ export default function DeveloperProfile({ id }) {
         <div className="grid gap-6 md:grid-cols-3">
           {/* Left Column - Tech & Stats */}
           <div className="space-y-6 md:col-span-1">
-            <Card title="Tech Stack" subtitle="Languages & Tools from GitHub">
+            <Card title="Top Skills" subtitle="Languages & Tools from GitHub">
               <div className="flex flex-wrap gap-2">
                 {developer.techStack?.length > 0 ? (
                   developer.techStack.map(tech => (

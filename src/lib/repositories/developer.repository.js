@@ -29,9 +29,9 @@ export async function findDevelopers({
     ];
   }
 
-  // Filter by tech stack
+  // Filter by tech stack (case-insensitive, partial matching allowed)
   if (techStack) {
-    const stacks = techStack.split(',').map((s) => s.trim());
+    const stacks = techStack.split(',').map((s) => new RegExp(s.trim(), 'i'));
     query.techStack = { $in: stacks };
   }
 
@@ -84,8 +84,8 @@ export async function findDeveloperByHash(profileHash) {
 export async function insertDeveloper(doc) {
   const db = await connectToDatabase();
 
-  // Extract createdAt so it only applies on insert, not update
-  const { createdAt, ...updateDoc } = doc;
+  // Extract createdAt and currentStatus so they only apply on insert, not update
+  const { createdAt, currentStatus, ...updateDoc } = doc;
 
   // Upsert based on profileHash for idempotent ingestion
   const result = await db.collection(COLLECTION).updateOne(
@@ -97,6 +97,7 @@ export async function insertDeveloper(doc) {
       },
       $setOnInsert: {
         createdAt: createdAt || new Date(),
+        currentStatus: currentStatus || 'new',
       },
     },
     { upsert: true }

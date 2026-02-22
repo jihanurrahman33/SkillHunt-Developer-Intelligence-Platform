@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   HiOutlineViewGrid,
   HiOutlineUsers,
   HiOutlineUserGroup,
   HiOutlineBriefcase,
   HiOutlineChartBar,
-  HiOutlineCog,
+  HiOutlineLogout,
 } from 'react-icons/hi';
 
 const navigation = [
@@ -16,15 +17,15 @@ const navigation = [
   { name: 'Developers', href: '/developers', icon: HiOutlineUsers },
   { name: 'Campaigns', href: '/campaigns', icon: HiOutlineBriefcase },
   { name: 'Analytics', href: '/analytics', icon: HiOutlineChartBar },
-  { name: 'Users', href: '/users', icon: HiOutlineUserGroup },
-];
-
-const bottomNav = [
-  { name: 'Settings', href: '/settings', icon: HiOutlineCog },
+  { name: 'Users', href: '/users', icon: HiOutlineUserGroup, adminOnly: true },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const { signOut } = require('next-auth/react');
+  
+  const userRole = session?.user?.role;
 
   const isActive = (href) => {
     if (href === '/') return pathname === '/';
@@ -44,8 +45,10 @@ export default function Sidebar() {
 
       {/* Main Navigation */}
       <nav className="flex-1 space-y-0.5 px-2 py-3">
-        {navigation.map((item) => {
-          const Icon = item.icon;
+        {navigation
+          .filter(item => !item.adminOnly || userRole === 'admin' || userRole === 'owner')
+          .map((item) => {
+            const Icon = item.icon;
           const active = isActive(item.href);
 
           return (
@@ -70,19 +73,13 @@ export default function Sidebar() {
 
       {/* Bottom Navigation */}
       <div className="border-t border-border px-2 py-3">
-        {bottomNav.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-surface-hover hover:text-foreground"
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {item.name}
-            </Link>
-          );
-        })}
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-surface-hover hover:text-foreground text-left"
+        >
+          <HiOutlineLogout className="h-4 w-4 shrink-0" />
+          Logout
+        </button>
       </div>
     </aside>
   );

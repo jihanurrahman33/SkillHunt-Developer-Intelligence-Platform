@@ -12,7 +12,7 @@ export async function GET(request) {
     const limitParams = parseInt(searchParams.get('limit'), 10);
     const limit = !isNaN(limitParams) && limitParams > 0 ? limitParams : 10;
 
-    const recentActivity = await getRecentGlobalActivity(limit);
+    const recentActivity = await getRecentGlobalActivity(auth.user.id, limit);
 
     return apiSuccess({ data: recentActivity });
   } catch (error) {

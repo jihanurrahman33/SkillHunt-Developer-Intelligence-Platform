@@ -51,7 +51,7 @@ export async function getDeveloperActivity(developerId, limit = 20) {
  * Fetch recent activity logs across all developers (for global dashboard).
  * @param {number} limit 
  */
-export async function getRecentGlobalActivity(limit = 10) {
+export async function getRecentGlobalActivity(userId, limit = 10) {
   const db = await connectToDatabase();
   
   const pipeline = [
@@ -65,7 +65,8 @@ export async function getRecentGlobalActivity(limit = 10) {
         as: 'developer'
       }
     },
-    { $unwind: '$developer' } // Assuming the developer must exist
+    { $unwind: '$developer' }, // Assuming the developer must exist
+    { $match: { 'developer.addedBy': userId } }
   ];
 
   const logs = await db.collection(COLLECTION).aggregate(pipeline).toArray();

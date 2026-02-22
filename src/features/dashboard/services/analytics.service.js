@@ -3,7 +3,8 @@
  */
 
 export async function fetchAnalyticsData() {
-  const response = await fetch('/api/analytics');
+  const t = Date.now();
+  const response = await fetch(`/api/analytics?t=${t}`);
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
