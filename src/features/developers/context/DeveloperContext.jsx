@@ -1,28 +1,15 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
+import useDevelopersHook from '@/features/developers/hooks/useDevelopers';
 
 const DeveloperContext = createContext();
 
 export function DeveloperProvider({ children }) {
-  const [developers, setDevelopers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({});
-
-  const value = {
-    developers,
-    setDevelopers,
-    loading,
-    setLoading,
-    searchQuery,
-    setSearchQuery,
-    filters,
-    setFilters,
-  };
+  const developerState = useDevelopersHook();
 
   return (
-    <DeveloperContext.Provider value={value}>
+    <DeveloperContext.Provider value={developerState}>
       {children}
     </DeveloperContext.Provider>
   );
