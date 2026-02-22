@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   HiOutlineViewGrid,
   HiOutlineUsers,
+  HiOutlineUserGroup,
   HiOutlineBriefcase,
   HiOutlineChartBar,
   HiOutlineCog,
@@ -15,6 +16,7 @@ const navigation = [
   { name: 'Developers', href: '/developers', icon: HiOutlineUsers },
   { name: 'Campaigns', href: '/campaigns', icon: HiOutlineBriefcase },
   { name: 'Analytics', href: '/analytics', icon: HiOutlineChartBar },
+  { name: 'Users', href: '/users', icon: HiOutlineUserGroup },
 ];
 
 const bottomNav = [

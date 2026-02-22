@@ -1,15 +1,39 @@
-// Developers API Route Handler
-// GET /api/developers — search & list developers
-// POST /api/developers — add developer (from GitHub ingestion)
-
 import { NextResponse } from 'next/server';
+import { verifyAuth, apiError, apiSuccess } from '@/lib/api-guard';
+import { findDevelopers } from '@/lib/repositories/developer.repository';
 
+// GET /api/developers
+// List developers with search, filtering, and pagination
 export async function GET(request) {
-  // TODO: Implement developer search with pagination
-  return NextResponse.json({ message: 'Developers API - not yet implemented' }, { status: 501 });
-}
+  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  if (auth.error) return auth.error;
 
-export async function POST(request) {
-  // TODO: Implement developer creation/ingestion
-  return NextResponse.json({ message: 'Developers API - not yet implemented' }, { status: 501 });
+  try {
+    const { searchParams } = new URL(request.url);
+
+    const search = searchParams.get('search') || '';
+    const techStack = searchParams.get('techStack') || '';
+    const location = searchParams.get('location') || '';
+    const status = searchParams.get('status') || '';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = parseInt(searchParams.get('sortOrder') || '-1', 10);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
+
+    const result = await findDevelopers({
+      search,
+      techStack,
+      location,
+      status,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    });
+
+    return apiSuccess(result);
+  } catch (error) {
+    console.error('Developers GET error:', error);
+    return apiError('Failed to fetch developers');
+  }
 }

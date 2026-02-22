@@ -1,4 +1,4 @@
-// Developer API service layer
+// Developer Service
 const API_BASE = '/api/developers';
 
 export async function fetchDevelopers(params = {}) {
@@ -6,7 +6,8 @@ export async function fetchDevelopers(params = {}) {
   const response = await fetch(`${API_BASE}?${query}`);
 
   if (!response.ok) {
-    throw new Error('Failed to fetch developers');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch developers');
   }
 
   return response.json();
@@ -16,24 +17,38 @@ export async function fetchDeveloperById(id) {
   const response = await fetch(`${API_BASE}/${id}`);
 
   if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error('Developer not found');
-    }
-    throw new Error('Failed to fetch developer');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch developer details');
   }
 
   return response.json();
 }
 
-export async function ingestFromGitHub(username) {
-  const response = await fetch(API_BASE, {
+export async function ingestDeveloper(username) {
+  const response = await fetch(`${API_BASE}/ingest`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username }),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to ingest developer from GitHub');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to ingest developer');
+  }
+
+  return response.json();
+}
+
+export async function updateDeveloperStatus(id, status) {
+  const response = await fetch(`${API_BASE}/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to update developer status');
   }
 
   return response.json();

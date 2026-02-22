@@ -1,4 +1,5 @@
 import RegisterPage from '@/features/auth/components/RegisterPage';
+import AuthRedirect from '@/features/auth/components/AuthRedirect';
 
 export const metadata = {
   title: 'Register | SkillHunt IntelliTrack',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Register() {
-  return <RegisterPage />;
+  return (
+    <AuthRedirect>
+      <RegisterPage />
+    </AuthRedirect>
+  );
 }

@@ -1,4 +1,5 @@
 import LoginPage from '@/features/auth/components/LoginPage';
+import AuthRedirect from '@/features/auth/components/AuthRedirect';
 
 export const metadata = {
   title: 'Login | SkillHunt IntelliTrack',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Login() {
-  return <LoginPage />;
+  return (
+    <AuthRedirect>
+      <LoginPage />
+    </AuthRedirect>
+  );
 }
