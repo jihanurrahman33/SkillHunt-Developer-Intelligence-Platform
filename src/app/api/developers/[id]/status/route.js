@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyAuth, apiError, apiSuccess } from '@/lib/api-guard';
-import { updateDeveloperStatus } from '@/lib/repositories/developer.repository';
+import { updateDeveloper } from '@/lib/repositories/developer.repository';
 
 // PATCH /api/developers/[id]/status
 // Update a developer's recruitment status
@@ -22,7 +22,7 @@ export async function PATCH(request, { params }) {
       updatePayload.campaignId = campaignId;
     }
 
-    const updated = await updateDeveloperStatus(id, updatePayload);
+    const updated = await updateDeveloper(id, updatePayload);
     
     if (!updated) {
       return apiError('Developer not found', 404);

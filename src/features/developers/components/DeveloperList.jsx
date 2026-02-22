@@ -14,7 +14,8 @@ import {
   HiOutlinePlus, 
   HiOutlineLocationMarker,
   HiOutlineCode,
-  HiOutlineExternalLink
+  HiOutlineExternalLink,
+  HiOutlineTrash
 } from 'react-icons/hi';
 import { FaGithub } from 'react-icons/fa';
 
@@ -39,6 +40,7 @@ export default function DeveloperList() {
     page, setPage,
     importDeveloper,
     changeStatus,
+    removeDeveloper,
   } = useDeveloperContext();
 
   // Ingest Modal State
@@ -92,6 +94,45 @@ export default function DeveloperList() {
         background: '#0B1220',
         color: '#e2e8f0',
       });
+    }
+  };
+
+  const handleDelete = async (devId, devName) => {
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: `You are about to delete ${devName}. This will also remove their activity logs.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3b82f6',
+      confirmButtonText: 'Yes, delete it!',
+      background: '#0B1220',
+      color: '#e2e8f0',
+    });
+
+    if (confirm.isConfirmed) {
+      const res = await removeDeveloper(devId);
+      if (res.success) {
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'The developer has been removed.',
+          icon: 'success',
+          toast: true,
+          position: 'bottom-end',
+          showConfirmButton: false,
+          timer: 3000,
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      } else {
+        Swal.fire({
+          title: 'Error!',
+          text: res.error,
+          icon: 'error',
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      }
     }
   };
 
@@ -293,13 +334,22 @@ export default function DeveloperList() {
                   </td>
 
                   <td className="px-4 py-3 text-right">
-                    <Link 
-                      href={`/developers/${dev._id}`}
-                      className="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground hover:bg-surface hover:text-primary transition-colors border border-transparent hover:border-border"
-                      title="View Profile"
-                    >
-                      <HiOutlineExternalLink className="h-4 w-4" />
-                    </Link>
+                    <div className="flex items-center justify-end gap-1">
+                      <Link 
+                        href={`/developers/${dev._id}`}
+                        className="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground hover:bg-surface hover:text-primary transition-colors border border-transparent hover:border-border"
+                        title="View Profile"
+                      >
+                        <HiOutlineExternalLink className="h-4 w-4" />
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(dev._id, dev.name)}
+                        className="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground hover:bg-surface hover:text-danger transition-colors border border-transparent hover:border-border"
+                        title="Delete Developer"
+                      >
+                        <HiOutlineTrash className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

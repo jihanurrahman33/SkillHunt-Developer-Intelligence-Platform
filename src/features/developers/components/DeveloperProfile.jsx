@@ -5,9 +5,12 @@ import {
   fetchDeveloperById, 
   updateDeveloperStatus,
   getDeveloperNotes,
-  addDeveloperNote
+  addDeveloperNote,
+  updateDeveloperNote,
+  deleteDeveloperNote
 } from '@/features/developers/services/developer.service';
 import { useCampaignContext } from '@/features/campaigns/context/CampaignContext';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -30,7 +33,9 @@ import {
   HiOutlineChartBar,
   HiOutlineArrowLeft,
   HiOutlineChatAlt2,
-  HiOutlineClock
+  HiOutlineClock,
+  HiOutlinePencil,
+  HiOutlineTrash
 } from 'react-icons/hi';
 import { FaGithub } from 'react-icons/fa';
 
@@ -44,6 +49,7 @@ const STATUS_OPTIONS = [
 
 export default function DeveloperProfile({ id }) {
   const { campaigns } = useCampaignContext();
+  const { user, isAdmin } = useAuth();
   const [developer, setDeveloper] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,6 +59,9 @@ export default function DeveloperProfile({ id }) {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState('');
   const [isNoteSubmitting, setIsNoteSubmitting] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
+  const [isNoteUpdating, setIsNoteUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // overview, notes
 
   useEffect(() => {
@@ -139,6 +148,61 @@ export default function DeveloperProfile({ id }) {
     }
   };
 
+  const handleUpdateNote = async (noteId) => {
+    if (!editingNoteText.trim()) return;
+
+    setIsNoteUpdating(true);
+    try {
+      const updated = await updateDeveloperNote(id, noteId, editingNoteText);
+      setNotes((prev) => prev.map((n) => (n._id === noteId ? updated : n)));
+      setEditingNoteId(null);
+      setEditingNoteText('');
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: err.message,
+        toast: true,
+        position: 'bottom-end',
+        showConfirmButton: false,
+        timer: 3000,
+        background: '#0B1220',
+        color: '#e2e8f0',
+      });
+    } finally {
+      setIsNoteUpdating(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'This note will be permanently deleted.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3b82f6',
+      confirmButtonText: 'Yes, delete it!',
+      background: '#0B1220',
+      color: '#e2e8f0',
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await deleteDeveloperNote(id, noteId);
+        setNotes((prev) => prev.filter((n) => n._id !== noteId));
+      } catch (err) {
+        Swal.fire({
+          title: 'Error!',
+          text: err.message,
+          icon: 'error',
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      }
+    }
+  };
+
   if (loading) return <ProfileSkeleton />;
   if (error) return <ErrorDisplay error={new Error(error)} reset={() => window.location.reload()} />;
   if (!developer) return <ErrorDisplay error={new Error('Developer not found')} />;
@@ -184,29 +248,29 @@ export default function DeveloperProfile({ id }) {
       </div>
 
       {/* Header Profile Card */}
-      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        <div className="h-32 bg-gradient-to-r from-primary/80 to-primary" />
+      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm relative">
+        <div className="h-32 bg-gradient-to-r from-primary/80 to-primary relative">
+          {/* Activity Score Card overlapping the cover banner */}
+          <div className="absolute top-4 right-6 flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/20 backdrop-blur-md px-6 py-2 min-w-[120px] shadow-sm">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">Activity Score</span>
+            <span className="text-3xl font-bold text-white leading-tight">{developer.activityScore}</span>
+          </div>
+        </div>
+        
         <div className="px-6 pb-6 relative">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 relative -top-12 sm:-top-8 mb-[-2rem]">
-            <div className="flex items-end gap-5">
-              <div className="rounded-xl border-4 border-surface bg-surface overflow-hidden h-24 w-24 shrink-0 shadow-md">
-                {developer.avatarUrl ? (
-                  <img src={developer.avatarUrl} alt={developer.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-primary/20 text-3xl font-bold text-primary">
-                    {developer.name?.charAt(0)?.toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div className="pb-1">
-                <h1 className="text-2xl font-bold text-foreground">{developer.name}</h1>
-                <p className="text-muted-foreground">@{developer.username}</p>
-              </div>
+          <div className="flex items-end gap-5 relative -top-12 sm:-top-8 mb-[-2rem]">
+            <div className="rounded-xl border-4 border-surface bg-surface overflow-hidden h-24 w-24 shrink-0 shadow-md">
+              {developer.avatarUrl ? (
+                <img src={developer.avatarUrl} alt={developer.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-primary/20 text-3xl font-bold text-primary">
+                  {developer.name?.charAt(0)?.toUpperCase()}
+                </div>
+              )}
             </div>
-            
-            <div className="flex flex-col items-center justify-center rounded-lg border border-primary/20 bg-primary/5 px-6 py-3 min-w-[120px]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">Activity Score</span>
-              <span className="text-3xl font-bold text-foreground mt-1">{developer.activityScore}</span>
+            <div className="pb-1">
+              <h1 className="text-2xl font-bold text-foreground">{developer.name}</h1>
+              <p className="text-muted-foreground">@{developer.username}</p>
             </div>
           </div>
 
@@ -422,26 +486,63 @@ export default function DeveloperProfile({ id }) {
                 ) : (
                   notes.map((note) => (
                     <div key={note._id} className="rounded-lg border border-border bg-background p-4">
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-// Make sure to add this import at the top of the file as well in a separate replace_file_content call if it's missing, but we'll try to just edit the inner part first and then do imports.
-
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
-                          {note.author?.name?.charAt(0)?.toUpperCase()}
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
+                            {note.author?.name?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-foreground">{note.author?.name}</span>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{note.author?.role}</span>
+                          </div>
                         </div>
-                        <span className="text-sm font-medium text-foreground">{note.author?.name}</span>
-                        <span className="text-xs text-muted-foreground">({note.author?.role})</span>
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
+                            <HiOutlineClock className="h-3.5 w-3.5" />
+                            {new Date(note.createdAt).toLocaleDateString()}
+                          </span>
+                          {(user?.id === note.author?.id || isAdmin) && (
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => { setEditingNoteId(note._id); setEditingNoteText(note.text); }}
+                                className="p-1 text-muted-foreground hover:text-primary transition-colors hover:bg-surface rounded"
+                                title="Edit Note"
+                              >
+                                <HiOutlinePencil className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteNote(note._id)}
+                                className="p-1 text-muted-foreground hover:text-danger transition-colors hover:bg-surface rounded"
+                                title="Delete Note"
+                              >
+                                <HiOutlineTrash className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <HiOutlineClock className="h-3.5 w-3.5" />
-                        {new Date(note.createdAt).toLocaleDateString()}
-                      </span>
+                      
+                      {editingNoteId === note._id ? (
+                        <div className="mt-2">
+                          <textarea
+                            value={editingNoteText}
+                            onChange={(e) => setEditingNoteText(e.target.value)}
+                            className="w-full min-h-[80px] resize-y rounded-md border border-border bg-surface p-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary mb-2"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => setEditingNoteId(null)}>Cancel</Button>
+                            <Button size="sm" onClick={() => handleUpdateNote(note._id)} loading={isNoteUpdating}>Save</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-md bg-secondary/30 p-3 mt-1 border border-border/50">
+                          <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{note.text}</p>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-foreground whitespace-pre-wrap">{note.text}</p>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
           </Card>
         </div>
         <div className="md:col-span-1 space-y-6">
@@ -477,7 +578,7 @@ export default function DeveloperProfile({ id }) {
               </div>
 
               <div className="text-xs text-muted-foreground pt-4 border-t border-border">
-                Notes are only visible to the internal team (Admins and Recruiters). They cannot be deleted once added to preserve audit history.
+                Notes are only visible to the internal team (Admins and Recruiters).
               </div>
             </div>
           </Card>

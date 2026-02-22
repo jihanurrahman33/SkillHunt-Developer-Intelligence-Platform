@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { 
   fetchDevelopers, 
   ingestDeveloper, 
-  updateDeveloperStatus 
+  updateDeveloperStatus,
+  deleteDeveloper
 } from '@/features/developers/services/developer.service';
 
 export default function useDevelopers() {
@@ -82,6 +83,17 @@ export default function useDevelopers() {
     }
   };
 
+  const removeDeveloper = async (id) => {
+    try {
+      await deleteDeveloper(id);
+      // Optimistically remove from list
+      setDevelopers((prev) => prev.filter((dev) => dev._id !== id));
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
   return {
     // Data
     developers,
@@ -104,5 +116,6 @@ export default function useDevelopers() {
     reload: loadDevelopers,
     changeStatus,
     importDeveloper,
+    removeDeveloper,
   };
 }

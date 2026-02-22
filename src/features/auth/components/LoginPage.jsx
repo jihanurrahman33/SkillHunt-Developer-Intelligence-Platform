@@ -72,9 +72,7 @@ function LoginContent() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/20">
-            <span className="text-base font-bold text-primary-foreground">SH</span>
-          </div>
+          <img src="/logo.png" alt="SkillHunt Logo" className="mx-auto mb-4 h-14 object-contain" />
           <h1 className="text-xl font-semibold text-foreground">
             Welcome back
           </h1>

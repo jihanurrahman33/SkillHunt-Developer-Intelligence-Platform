@@ -35,9 +35,7 @@ export default function Sidebar() {
     <aside className="hidden w-60 flex-col border-r border-border bg-surface lg:flex">
       {/* Logo */}
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-          <span className="text-xs font-bold text-primary-foreground">SH</span>
-        </div>
+        <img src="/logo.png" alt="SkillHunt Logo" className="h-8 object-contain" />
         <div>
           <h1 className="text-sm font-semibold text-foreground">SkillHunt</h1>
           <p className="text-[10px] leading-none text-muted-foreground">IntelliTrack</p>

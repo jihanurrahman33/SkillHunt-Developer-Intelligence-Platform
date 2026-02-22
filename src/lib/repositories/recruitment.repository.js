@@ -40,3 +40,33 @@ export async function getDevNotes(developerId) {
     developerId: n.developerId.toString() 
   }));
 }
+
+export async function updateDevNote(noteId, text) {
+  const db = await connectToDatabase();
+  
+  if (!ObjectId.isValid(noteId)) return null;
+
+  const result = await db.collection(COLLECTION).findOneAndUpdate(
+    { _id: new ObjectId(noteId) },
+    { $set: { text, updatedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+
+  if (!result) return null;
+
+  return { 
+    ...result, 
+    _id: result._id.toString(), 
+    developerId: result.developerId.toString() 
+  };
+}
+
+export async function deleteDevNote(noteId) {
+  const db = await connectToDatabase();
+  
+  if (!ObjectId.isValid(noteId)) return false;
+
+  const result = await db.collection(COLLECTION).deleteOne({ _id: new ObjectId(noteId) });
+  
+  return result.deletedCount > 0;
+}

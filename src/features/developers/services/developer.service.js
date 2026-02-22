@@ -40,7 +40,7 @@ export async function ingestDeveloper(username) {
 }
 
 export async function updateDeveloperStatus(id, status, campaignId = null) {
-  const updateData = { status };
+  const updateData = { currentStatus: status };
   if (campaignId !== null) { // Use null check as default is null
     updateData.campaignId = campaignId;
   }
@@ -80,6 +80,47 @@ export async function addDeveloperNote(id, text) {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || 'Failed to add note');
+  }
+
+  return response.json();
+}
+
+export async function updateDeveloperNote(id, noteId, text) {
+  const response = await fetch(`${API_BASE}/${id}/notes/${noteId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to update note');
+  }
+
+  return response.json();
+}
+
+export async function deleteDeveloperNote(id, noteId) {
+  const response = await fetch(`${API_BASE}/${id}/notes/${noteId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to delete note');
+  }
+
+  return response.json();
+}
+
+export async function deleteDeveloper(id) {
+  const response = await fetch(`${API_BASE}/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to delete developer');
   }
 
   return response.json();

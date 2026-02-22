@@ -155,3 +155,17 @@ export async function getDeveloperStats() {
     topLanguages: topLanguages.map((l) => ({ name: l._id, count: l.count })),
   };
 }
+
+export async function deleteDeveloperById(id) {
+  const db = await connectToDatabase();
+
+  if (!ObjectId.isValid(id)) return false;
+
+  // Cleanup related data
+  await db.collection('activityLogs').deleteMany({ developerId: id });
+  await db.collection('recruitmentRecords').deleteMany({ developerId: id });
+
+  const result = await db.collection(COLLECTION).deleteOne({ _id: new ObjectId(id) });
+  
+  return result.deletedCount > 0;
+}
