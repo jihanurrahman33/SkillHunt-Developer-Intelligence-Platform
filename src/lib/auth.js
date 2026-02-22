@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
+import bcrypt from 'bcryptjs';
 import connectToDatabase from '@/lib/db';
 
 export const authOptions = {
@@ -27,15 +28,19 @@ export const authOptions = {
 
         const db = await connectToDatabase();
         const user = await db.collection('users').findOne({
-          email: credentials.email,
+          email: credentials.email.toLowerCase().trim(),
         });
 
         if (!user) {
           throw new Error('No account found with this email');
         }
 
-        // TODO: Use bcrypt to compare passwords in production
-        if (user.password !== credentials.password) {
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!isPasswordValid) {
           throw new Error('Invalid password');
         }
 
@@ -53,31 +58,52 @@ export const authOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account.provider === 'google' || account.provider === 'github') {
-        const db = await connectToDatabase();
-        const existingUser = await db.collection('users').findOne({
-          email: user.email,
-        });
-
-        if (!existingUser) {
-          await db.collection('users').insertOne({
-            name: user.name,
+        try {
+          const db = await connectToDatabase();
+          const existingUser = await db.collection('users').findOne({
             email: user.email,
-            image: user.image,
-            role: 'recruiter', // default role for new social logins
-            provider: account.provider,
-            createdAt: new Date(),
           });
+
+          if (!existingUser) {
+            await db.collection('users').insertOne({
+              name: user.name,
+              email: user.email,
+              image: user.image,
+              role: 'recruiter',
+              provider: account.provider,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          } else {
+            // Update image/name if changed on provider side
+            await db.collection('users').updateOne(
+              { email: user.email },
+              {
+                $set: {
+                  image: user.image,
+                  name: user.name,
+                  updatedAt: new Date(),
+                },
+              }
+            );
+          }
+        } catch (error) {
+          console.error('SignIn callback error:', error);
+          return false;
         }
       }
       return true;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in, attach role from the user object
       if (user) {
         token.role = user.role;
         token.id = user.id;
-      } else {
-        // Fetch role from DB on subsequent requests
+      }
+
+      // On session update or if role is missing, refresh from DB
+      if (trigger === 'update' || !token.role) {
         const db = await connectToDatabase();
         const dbUser = await db.collection('users').findOne({
           email: token.email,
@@ -87,6 +113,7 @@ export const authOptions = {
           token.id = dbUser._id.toString();
         }
       }
+
       return token;
     },
 
