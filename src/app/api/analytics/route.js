@@ -10,7 +10,6 @@ export async function GET(request) {
   if (auth.error) return auth.error;
 
   try {
-    console.log('Analytics API called by auth.user.id:', auth.user.id);
     const analyticsData = await getDashboardAnalytics(auth.user.id);
     return apiSuccess(analyticsData);
   } catch (error) {

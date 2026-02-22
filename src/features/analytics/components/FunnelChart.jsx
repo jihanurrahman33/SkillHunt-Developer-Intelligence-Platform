@@ -30,8 +30,8 @@ export default function FunnelChart({ data = [] }) {
 
   return (
     <Card title="Recruitment Pipeline" subtitle="Current status distribution of all candidates" className="h-[400px] flex flex-col">
-      <div className="flex-1 w-full min-h-[300px] mt-2">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-[320px] mt-2">
+        <ResponsiveContainer width="100%" height={320}>
           <PieChart>
             <Pie
               data={formattedData}

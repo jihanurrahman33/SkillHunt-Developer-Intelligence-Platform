@@ -21,14 +21,14 @@ export default function TopTechChart({ data = [] }) {
 
   return (
     <Card title="Top Skills" subtitle="Most common technologies in your talent pool" className="h-[400px] flex flex-col">
-      <div className="flex-1 w-full min-h-[300px] mt-6 pr-4">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-[300px] mt-6 pr-4">
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={formattedData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} tickMargin={12} />
             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} allowDecimals={false} />
             <Tooltip
-              cursor={{ fill: '#1e293b' }}
+              cursor={{ fill: 'transparent' }}
               contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
               itemStyle={{ color: '#f8fafc', fontWeight: 600 }}
               formatter={(value) => [`${value} developers`, 'Count']}
