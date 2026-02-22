@@ -1,18 +1,22 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
+import { useSession } from 'next-auth/react';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  // TODO: Integrate with NextAuth session
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+
+  const user = session?.user || null;
+  const loading = status === 'loading';
 
   const value = {
     user,
     loading,
-    setUser,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === 'admin',
+    isRecruiter: user?.role === 'recruiter',
   };
 
   return (
