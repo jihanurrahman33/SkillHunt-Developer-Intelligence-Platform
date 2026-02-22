@@ -53,3 +53,29 @@ export async function updateDeveloperStatus(id, status) {
 
   return response.json();
 }
+
+export async function getDeveloperNotes(id) {
+  const response = await fetch(`${API_BASE}/${id}/notes`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch notes');
+  }
+
+  return response.json();
+}
+
+export async function addDeveloperNote(id, text) {
+  const response = await fetch(`${API_BASE}/${id}/notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to add note');
+  }
+
+  return response.json();
+}
