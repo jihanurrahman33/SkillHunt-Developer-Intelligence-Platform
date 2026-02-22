@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+coding style guideline.md
+core_requirement.md
+design guidelines.md
+important guidelines.md
+project structure.md
+requirement.md
+requirement2.md
+requirement3.md
+requirement4.md
+development-process.md
