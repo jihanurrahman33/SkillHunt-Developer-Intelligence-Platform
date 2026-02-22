@@ -84,16 +84,19 @@ export async function findDeveloperByHash(profileHash) {
 export async function insertDeveloper(doc) {
   const db = await connectToDatabase();
 
+  // Extract createdAt so it only applies on insert, not update
+  const { createdAt, ...updateDoc } = doc;
+
   // Upsert based on profileHash for idempotent ingestion
   const result = await db.collection(COLLECTION).updateOne(
     { profileHash: doc.profileHash },
     {
       $set: {
-        ...doc,
+        ...updateDoc,
         updatedAt: new Date(),
       },
       $setOnInsert: {
-        createdAt: new Date(),
+        createdAt: createdAt || new Date(),
       },
     },
     { upsert: true }
