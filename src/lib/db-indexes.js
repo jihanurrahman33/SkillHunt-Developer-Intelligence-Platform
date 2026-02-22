@@ -17,8 +17,10 @@ export async function setupIndexes() {
   // Developers collection
   await db.collection('developers').createIndexes([
     { key: { profileHash: 1 }, unique: true },
+    { key: { username: 1 }, unique: true },
     { key: { name: 'text', bio: 'text', location: 'text' } },
     { key: { techStack: 1 } },
+    { key: { currentStatus: 1 } },
     { key: { location: 1 } },
     { key: { activityScore: -1 } },
     { key: { lastActivityAt: -1 } },
@@ -36,14 +38,15 @@ export async function setupIndexes() {
   // Campaigns
   await db.collection('campaigns').createIndexes([
     { key: { createdBy: 1 } },
+    { key: { status: 1 } },
     { key: { createdAt: -1 } },
   ]);
 
   // Activity logs
   await db.collection('activityLogs').createIndexes([
-    { key: { developerId: 1, timestamp: -1 } },
-    { key: { changeType: 1 } },
-    { key: { timestamp: -1 } },
+    { key: { developerId: 1, createdAt: -1 } },
+    { key: { type: 1 } },
+    { key: { createdAt: -1 } },
   ]);
 
   console.log('Database indexes created successfully');

@@ -1,9 +1,18 @@
-// Analytics API Route Handler
-// GET /api/analytics — aggregated metrics
-
 import { NextResponse } from 'next/server';
+import { verifyAuth, apiError, apiSuccess } from '@/lib/api-guard';
+import { getDashboardAnalytics } from '@/lib/repositories/analytics.repository';
 
+// GET /api/analytics
 export async function GET(request) {
-  // TODO: Implement analytics aggregation
-  return NextResponse.json({ message: 'Analytics API - not yet implemented' }, { status: 501 });
+  // Ensure only admins and recruiters have access to aggregate data
+  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  if (auth.error) return auth.error;
+
+  try {
+    const analyticsData = await getDashboardAnalytics();
+    return apiSuccess(analyticsData);
+  } catch (error) {
+    console.error('Analytics API Error:', error);
+    return apiError('Failed to fetch analytics data', 500);
+  }
 }

@@ -13,7 +13,12 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ProfileSkeleton from '@/components/ui/ProfileSkeleton';
 import ErrorDisplay from '@/components/ui/ErrorDisplay';
-import ActivityFeed from '@/features/developers/components/ActivityFeed';
+import dynamic from 'next/dynamic';
+
+const ActivityFeed = dynamic(() => import('@/features/developers/components/ActivityFeed'), {
+  ssr: false,
+  loading: () => <div className="h-48 flex items-center justify-center border border-border rounded-xl bg-surface animate-pulse text-muted-foreground mt-4">Loading activity logs...</div>
+});
 import Link from 'next/link';
 import Swal from 'sweetalert2';
 import { 

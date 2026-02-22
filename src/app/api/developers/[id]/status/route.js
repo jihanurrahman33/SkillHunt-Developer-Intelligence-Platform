@@ -14,10 +14,7 @@ export async function PATCH(request, { params }) {
     const { currentStatus, campaignId } = body;
 
     if (!currentStatus) {
-      return NextResponse.json(
-        { success: false, error: 'currentStatus is required' },
-        { status: 400 }
-      );
+      return apiError('currentStatus is required', 400);
     }
 
     const updatePayload = { currentStatus };
@@ -28,18 +25,13 @@ export async function PATCH(request, { params }) {
     const updated = await updateDeveloperStatus(id, updatePayload);
     
     if (!updated) {
-      return NextResponse.json(
-        { success: false, error: 'Developer not found' },
-        { status: 404 }
-      );
+      return apiError('Developer not found', 404);
     }
 
-    return NextResponse.json({ success: true, data: updated });
+    return apiSuccess({ data: updated });
   } catch (error) {
     console.error(`Status update error for developer ${params.id}:`, error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to update status' },
-      { status: 500 }
-    );
+    return apiError('Failed to update status', 500);
   }
 }
+

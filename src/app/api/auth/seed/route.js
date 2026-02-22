@@ -2,9 +2,9 @@
 // POST /api/auth/seed
 // Protected: only works when no admin exists yet
 
-import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectToDatabase from '@/lib/db';
+import { apiError, apiSuccess } from '@/lib/api-guard';
 
 export async function POST(request) {
   try {
@@ -14,27 +14,18 @@ export async function POST(request) {
     const existingAdmin = await db.collection('users').findOne({ role: 'admin' });
 
     if (existingAdmin) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Admin user already exists' },
-        { status: 403 }
-      );
+      return apiError('Admin user already exists', 403);
     }
 
     const body = await request.json();
     const { name, email, password } = body;
 
     if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: 'Validation', message: 'Name, email, and password are required' },
-        { status: 400 }
-      );
+      return apiError('Name, email, and password are required', 400);
     }
 
     if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Validation', message: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
+      return apiError('Password must be at least 6 characters', 400);
     }
 
     // Check if email is already taken
@@ -43,10 +34,7 @@ export async function POST(request) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Conflict', message: 'Email already in use' },
-        { status: 409 }
-      );
+      return apiError('Email already in use', 409);
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -62,18 +50,12 @@ export async function POST(request) {
       updatedAt: new Date(),
     });
 
-    return NextResponse.json(
-      {
-        message: 'Admin user created successfully',
-        userId: result.insertedId.toString(),
-      },
-      { status: 201 }
-    );
+    return apiSuccess({
+      message: 'Admin user created successfully',
+      userId: result.insertedId.toString(),
+    }, 201);
   } catch (error) {
     console.error('Seed error:', error);
-    return NextResponse.json(
-      { error: 'Internal', message: 'Failed to create admin user' },
-      { status: 500 }
-    );
+    return apiError('Failed to create admin user', 500);
   }
 }

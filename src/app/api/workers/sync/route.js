@@ -3,6 +3,7 @@ import { getGithubUserProfile } from '@/lib/github';
 import { extractTechStack, calculateActivityScore } from '@/lib/models/developer.model';
 import { findDevelopers, updateDeveloper } from '@/lib/repositories/developer.repository';
 import { logActivity } from '@/lib/repositories/activity.repository';
+import { apiError, apiSuccess } from '@/lib/api-guard';
 
 // We want to prevent timing out on Vercel hobby if we do too many at once.
 // We'll limit to a safe number of developers per cron run.
@@ -15,7 +16,7 @@ export async function GET(request) {
     // 1. Optional Security: Verify API key if provided by cron
     const authHeader = request.headers.get('authorization');
     if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      // return apiError('Unauthorized', 401);
     }
 
     // 2. Fetch developers who haven't been updated recently.
@@ -28,7 +29,7 @@ export async function GET(request) {
     const developers = dbResult.developers;
 
     if (!developers || developers.length === 0) {
-      return NextResponse.json({ success: true, message: 'No developers found to sync.' });
+      return apiSuccess({ message: 'No developers found to sync.' });
     }
 
     const syncResults = [];
@@ -105,14 +106,13 @@ export async function GET(request) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       processed: syncResults.length,
       results: syncResults
     });
 
   } catch (error) {
     console.error('Background Sync Worker Error:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return apiError('Internal Server Error', 500);
   }
 }

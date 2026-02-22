@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyAuth, apiError, apiSuccess } from '@/lib/api-guard';
+import { rateLimit } from '@/lib/rate-limiter';
 import { getGithubUserProfile } from '@/lib/github';
 import { 
   createDeveloperDocument, 
@@ -11,6 +12,10 @@ import { insertDeveloper } from '@/lib/repositories/developer.repository';
 
 // POST /api/developers/ingest
 export async function POST(request) {
+  // 1. Rate Limiting: Max 20 ingestion requests per minute per IP
+  const rateLimitResponse = rateLimit(request, 20, 60000);
+  if (rateLimitResponse) return rateLimitResponse;
+
   // Only recruiters or admins can ingest developers
   const auth = await verifyAuth(request, ['admin', 'recruiter']);
   if (auth.error) return auth.error;

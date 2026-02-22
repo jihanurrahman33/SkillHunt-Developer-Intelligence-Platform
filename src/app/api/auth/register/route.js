@@ -1,36 +1,32 @@
 // Register API — create new user accounts
 // POST /api/auth/register
 
-import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectToDatabase from '@/lib/db';
+import { apiError, apiSuccess } from '@/lib/api-guard';
+import { rateLimit } from '@/lib/rate-limiter';
 
 export async function POST(request) {
+  // 1. Rate Limiting: Max 5 registration requests per minute per IP
+  const rateLimitResponse = rateLimit(request, 5, 60000);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const body = await request.json();
     const { name, email, password } = body;
 
     // Validation
     if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: 'Validation', message: 'Name, email, and password are required' },
-        { status: 400 }
-      );
+      return apiError('Name, email, and password are required', 400);
     }
 
     if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Validation', message: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
+      return apiError('Password must be at least 6 characters', 400);
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Validation', message: 'Invalid email format' },
-        { status: 400 }
-      );
+      return apiError('Invalid email format', 400);
     }
 
     const db = await connectToDatabase();
@@ -41,10 +37,7 @@ export async function POST(request) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Conflict', message: 'An account with this email already exists' },
-        { status: 409 }
-      );
+      return apiError('An account with this email already exists', 409);
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -60,18 +53,13 @@ export async function POST(request) {
       updatedAt: new Date(),
     });
 
-    return NextResponse.json(
-      {
-        message: 'Account created successfully',
-        userId: result.insertedId.toString(),
-      },
-      { status: 201 }
-    );
+    return apiSuccess({
+      message: 'Account created successfully',
+      userId: result.insertedId.toString(),
+    }, 201);
   } catch (error) {
     console.error('Register error:', error);
-    return NextResponse.json(
-      { error: 'Internal', message: 'Failed to create account' },
-      { status: 500 }
-    );
+    return apiError('Failed to create account', 500);
   }
 }
+
