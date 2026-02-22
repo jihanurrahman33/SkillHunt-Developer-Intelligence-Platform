@@ -11,22 +11,35 @@ export async function PATCH(request, { params }) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status } = body;
+    const { currentStatus, campaignId } = body;
 
-    const validStatuses = ['new', 'contacted', 'interviewing', 'hired', 'rejected'];
-    if (!status || !validStatuses.includes(status)) {
-      return apiError('Invalid status', 400);
+    if (!currentStatus) {
+      return NextResponse.json(
+        { success: false, error: 'currentStatus is required' },
+        { status: 400 }
+      );
     }
 
-    const success = await updateDeveloperStatus(id, status);
-
-    if (!success) {
-      return apiError('Developer not found or update failed', 404);
+    const updatePayload = { currentStatus };
+    if (campaignId !== undefined) {
+      updatePayload.campaignId = campaignId;
     }
 
-    return apiSuccess({ message: 'Status updated successfully', status });
+    const updated = await updateDeveloperStatus(id, updatePayload);
+    
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, error: 'Developer not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error(`Developer PATCH status ${params.id} error:`, error);
-    return apiError('Failed to update developer status');
+    console.error(`Status update error for developer ${params.id}:`, error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update status' },
+      { status: 500 }
+    );
   }
 }

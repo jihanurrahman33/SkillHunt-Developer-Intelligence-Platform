@@ -39,11 +39,16 @@ export async function ingestDeveloper(username) {
   return response.json();
 }
 
-export async function updateDeveloperStatus(id, status) {
+export async function updateDeveloperStatus(id, status, campaignId = null) {
+  const updateData = { status };
+  if (campaignId !== null) { // Use null check as default is null
+    updateData.campaignId = campaignId;
+  }
+
   const response = await fetch(`${API_BASE}/${id}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(updateData),
   });
 
   if (!response.ok) {

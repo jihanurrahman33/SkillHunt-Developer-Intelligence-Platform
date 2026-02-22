@@ -7,6 +7,7 @@ import {
   getDeveloperNotes,
   addDeveloperNote
 } from '@/features/developers/services/developer.service';
+import { useCampaignContext } from '@/features/campaigns/context/CampaignContext';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -36,6 +37,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function DeveloperProfile({ id }) {
+  const { campaigns } = useCampaignContext();
   const [developer, setDeveloper] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,15 +68,24 @@ export default function DeveloperProfile({ id }) {
     loadData();
   }, [id]);
 
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = async (newStatus, newCampaignId = undefined) => {
     setIsUpdating(true);
     try {
-      await updateDeveloperStatus(id, newStatus);
-      setDeveloper((prev) => ({ ...prev, currentStatus: newStatus }));
+      // If we aren't changing the campaign, pass the existing one to persist it
+      const campaignToSave = newCampaignId !== undefined ? newCampaignId : developer.campaignId;
+      
+      await updateDeveloperStatus(id, newStatus, campaignToSave);
+      
+      setDeveloper((prev) => ({ 
+        ...prev, 
+        currentStatus: newStatus,
+        ...(newCampaignId !== undefined ? { campaignId: newCampaignId } : {})
+      }));
+
       Swal.fire({
         icon: 'success',
-        title: 'Status Updated',
-        text: `Moved to ${newStatus}`,
+        title: 'Developer Updated',
+        text: `Successfully updated developer`,
         toast: true,
         position: 'bottom-end',
         showConfirmButton: false,
@@ -390,44 +401,65 @@ export default function DeveloperProfile({ id }) {
                     <div key={note._id} className="rounded-lg border border-border bg-background p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
-                            {note.author?.name?.charAt(0)?.toUpperCase()}
-                          </div>
-                          <span className="text-sm font-medium text-foreground">{note.author?.name}</span>
-                          <span className="text-xs text-muted-foreground">({note.author?.role})</span>
+// Make sure to add this import at the top of the file as well in a separate replace_file_content call if it's missing, but we'll try to just edit the inner part first and then do imports.
+
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                          {note.author?.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <HiOutlineClock className="h-3.5 w-3.5" />
-                          {new Date(note.createdAt).toLocaleDateString()}
-                        </span>
+                        <span className="text-sm font-medium text-foreground">{note.author?.name}</span>
+                        <span className="text-xs text-muted-foreground">({note.author?.role})</span>
                       </div>
-                      <p className="text-sm text-foreground whitespace-pre-wrap">{note.text}</p>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <HiOutlineClock className="h-3.5 w-3.5" />
+                        {new Date(note.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
-                  ))
-                )}
-              </div>
-            </Card>
-          </div>
-          <div className="md:col-span-1 space-y-6">
-            <Card title="Recruitment Status">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Current Phase</span>
-                  <Badge variant={
-                    developer.currentStatus === 'new' ? 'default' :
-                    developer.currentStatus === 'hired' ? 'success' :
-                    developer.currentStatus === 'rejected' ? 'danger' : 'warning'
-                  }>
-                    {developer.currentStatus.toUpperCase()}
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground pt-4 border-t border-border">
-                  Notes are only visible to the internal team (Admins and Recruiters). They cannot be deleted once added to preserve audit history.
-                </div>
-              </div>
-            </Card>
-          </div>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{note.text}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
         </div>
+        <div className="md:col-span-1 space-y-6">
+          <Card title="Recruitment Status">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Current Phase</span>
+                <Badge variant={
+                  developer.currentStatus === 'new' ? 'default' :
+                  developer.currentStatus === 'hired' ? 'success' :
+                  developer.currentStatus === 'rejected' ? 'danger' : 'warning'
+                }>
+                  {developer.currentStatus.toUpperCase()}
+                </Badge>
+              </div>
+
+              {/* Campaign Assignment */}
+              <div className="pt-4 border-t border-border">
+                <label className="block text-xs font-medium text-muted-foreground mb-2">Assign to Campaign</label>
+                <select
+                  value={developer.campaignId || ''}
+                  onChange={(e) => handleStatusChange(developer.currentStatus, e.target.value || null)}
+                  disabled={isUpdating}
+                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                >
+                  <option value="">-- No Campaign --</option>
+                  {campaigns?.map(campaign => (
+                    <option key={campaign._id} value={campaign._id}>
+                      {campaign.title} ({campaign.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="text-xs text-muted-foreground pt-4 border-t border-border">
+                Notes are only visible to the internal team (Admins and Recruiters). They cannot be deleted once added to preserve audit history.
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
       )}
     </div>
   );
