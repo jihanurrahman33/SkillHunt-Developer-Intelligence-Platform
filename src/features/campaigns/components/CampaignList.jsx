@@ -61,6 +61,7 @@ export default function CampaignList() {
         {!isAnalyst && (
           <Button 
             onClick={openCreateModal}
+            className="w-full sm:w-auto"
             icon={<HiOutlinePlus className="h-4 w-4" />}
           >
             New Campaign
@@ -69,17 +70,87 @@ export default function CampaignList() {
       </div>
 
       {/* Filters (Basic) */}
-      <div className="mb-6 max-w-sm">
+      <div className="mb-6 w-full lg:max-w-sm">
         <Input
           placeholder="Search campaigns..."
           icon={<HiOutlineSearch className="h-4 w-4" />}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          className="w-full"
         />
       </div>
 
-      {/* Table grid */}
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-sm">
+      {/* Mobile Card View (shown only on small screens) */}
+      <div className="grid gap-4 sm:hidden">
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border bg-surface p-4 h-40" />
+          ))
+        ) : campaigns.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+            No campaigns found.
+          </div>
+        ) : (
+          campaigns.map((camp) => (
+            <div key={camp._id} className="rounded-xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-primary/50">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link 
+                    href={`/campaigns/${camp._id}`} 
+                    className="block font-bold text-foreground text-base truncate hover:text-primary transition-colors"
+                  >
+                    {camp.title}
+                  </Link>
+                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{camp.role}</p>
+                </div>
+                <div className="shrink-0">{getStatusBadge(camp.status)}</div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Owner</span>
+                  <span className="text-xs text-foreground font-medium">{camp.createdBy?.name || 'System'}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider font-medium">Created</span>
+                  <span className="text-xs text-muted-foreground">
+                    {camp.createdAt ? formatDistanceToNow(new Date(camp.createdAt), { addSuffix: true }) : ''}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-end gap-2 border-t border-border pt-3">
+                 <Link 
+                  href={`/campaigns/${camp._id}`}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-surface-hover px-3 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                >
+                  <HiOutlineUsers className="h-4 w-4" />
+                  View Funnel
+                </Link>
+                {!isAnalyst && (
+                  <button 
+                    onClick={() => openEditModal(camp)}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-hover text-muted-foreground hover:border-primary/50 hover:text-primary transition-all"
+                  >
+                    <HiOutlinePencil className="h-4 w-4" />
+                  </button>
+                )}
+                {!isAnalyst && (
+                  <button 
+                    onClick={() => removeCampaign(camp._id)}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-hover text-muted-foreground hover:border-danger/50 hover:text-danger transition-all"
+                  >
+                    <HiOutlineTrash className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View (hidden on small screens) */}
+      <div className="hidden sm:block overflow-x-auto rounded-lg border border-border bg-surface shadow-sm">
         <table className="w-full text-left text-sm text-foreground">
           <thead className="border-b border-border bg-secondary/50 text-xs uppercase text-muted-foreground">
             <tr>

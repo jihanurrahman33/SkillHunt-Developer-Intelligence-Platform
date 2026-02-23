@@ -2,16 +2,33 @@
 
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useTheme } from '@/providers/ThemeContext';
-import { HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { useUI } from '@/providers/UIContext';
+import { HiOutlineMoon, HiOutlineSun, HiOutlineMenuAlt2 } from 'react-icons/hi';
 
 export default function Header() {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { toggleSidebar } = useUI();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-surface px-4">
-      {/* Empty Left Section to maintain spacing for the Right Section */}
-      <div className="flex-1"></div>
+    <header className="flex h-14 items-center justify-between border-b border-border bg-surface px-4 sticky top-0 z-30">
+      {/* Mobile Menu Toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="mr-2 rounded-md p-2 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground lg:hidden"
+        title="Open menu"
+      >
+        <HiOutlineMenuAlt2 className="h-5 w-5" />
+      </button>
+
+      {/* Brand Logo (Mobile Only) */}
+      <div className="flex flex-1 items-center gap-2 lg:hidden">
+        <img src="/logo.png" alt="SkillHunt" className="h-6 w-6 object-contain" />
+        <span className="text-sm font-bold text-foreground">SkillHunt</span>
+      </div>
+
+      {/* Desktop Space Filler */}
+      <div className="hidden lg:block lg:flex-1"></div>
 
       {/* Right Section */}
       <div className="flex items-center gap-2">

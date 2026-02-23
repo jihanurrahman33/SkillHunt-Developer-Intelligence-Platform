@@ -75,7 +75,7 @@ export default function UserManagement() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-foreground">User Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -83,25 +83,24 @@ export default function UserManagement() {
           </p>
         </div>
         {pagination && (
-          <span className="text-sm text-muted-foreground">
+          <Badge variant="outline" className="sm:inline-flex">
             {pagination.total} user{pagination.total !== 1 ? 's' : ''}
-          </span>
+          </Badge>
         )}
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
           <HiOutlineSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder="Search team members..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full rounded-md border border-border bg-surface py-1.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
           />
         </div>
 
@@ -111,7 +110,7 @@ export default function UserManagement() {
             setRoleFilter(e.target.value);
             setPage(1);
           }}
-          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full sm:w-48 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
         >
           <option value="">All Roles</option>
           <option value="admin">Admin</option>
@@ -119,27 +118,87 @@ export default function UserManagement() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-border">
+      {/* Mobile Card View (shown only on small screens) */}
+      <div className="grid gap-4 sm:hidden">
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border bg-surface p-4 h-32" />
+          ))
+        ) : users.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+            No users found.
+          </div>
+        ) : (
+          users.map((user) => (
+            <div key={user._id} className="rounded-xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-primary/50">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary border border-primary/20">
+                    {user.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-foreground text-sm truncate">{user.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                   <Badge
+                    variant={user.role === 'admin' ? 'info' : 'default'}
+                    dot
+                    size="sm"
+                  >
+                    {user.role === 'admin' ? 'Admin' : 'Recruiter'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Method</span>
+                  <span className="text-xs text-foreground capitalize">{user.provider || 'credentials'}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                   <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Joined</span>
+                   <span className="text-xs text-muted-foreground">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3 border-t border-border pt-3">
+                <button
+                  onClick={() => handleRoleChange(user._id, user.name, user.role)}
+                  className="w-full rounded-lg border border-primary/20 bg-primary/5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
+                >
+                  {user.role === 'admin' ? 'Demote to Recruiter' : 'Promote to Admin'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View (hidden on small screens) */}
+      <div className="hidden sm:block overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border bg-secondary">
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <tr className="border-b border-border bg-secondary/50">
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 User
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Email
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Provider
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Role
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Joined
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Action
               </th>
             </tr>
@@ -216,7 +275,7 @@ export default function UserManagement() {
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => handleRoleChange(user._id, user.name, user.role)}
-                      className="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+                      className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
                     >
                       {user.role === 'admin' ? 'Make Recruiter' : 'Make Admin'}
                     </button>
