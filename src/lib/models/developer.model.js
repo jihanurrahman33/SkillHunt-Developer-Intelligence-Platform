@@ -41,6 +41,7 @@ export function createDeveloperDocument(data) {
     activityScore: data.activityScore || 0,
     contributionCount: data.contributionCount || 0,
     lastActivityAt: data.lastActivityAt || null,
+    readinessLevel: data.readinessLevel || 'Low',
     lastFetchedAt: new Date(),
 
     // Recruitment (managed separately but denormalized for list queries)
@@ -103,6 +104,25 @@ export function calculateActivityScore({
   else if (daysSinceLastPush <= 180) score += 5;
 
   return Math.round(Math.min(score, 100));
+}
+
+/**
+ * Determine Engagement Readiness level based on activity and recency
+ * @param {Object} metrics 
+ * @returns {'High' | 'Medium' | 'Low'}
+ */
+export function calculateReadinessLevel({ 
+  daysSinceLastPush = 365, 
+  activityScore = 0 
+}) {
+  // High: Active in the last 14 days AND decent activity
+  if (daysSinceLastPush <= 14 && activityScore >= 40) return 'High';
+  
+  // Medium: Recently active (45 days) OR high historical expertise
+  if (daysSinceLastPush <= 45 || activityScore >= 70) return 'Medium';
+  
+  // Low: Inactive for > 45 days
+  return 'Low';
 }
 
 // Normalize GitHub languages object → techStack array

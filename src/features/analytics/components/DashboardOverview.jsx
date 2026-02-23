@@ -130,7 +130,7 @@ export default function DashboardOverview() {
         </div>
         <div className="md:col-span-1">
           <div className="h-[400px]">
-            <RecentActivityWidget limit={7} />
+            <RecentActivityWidget limit={10} />
           </div>
         </div>
       </div>

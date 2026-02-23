@@ -52,6 +52,7 @@ export default function RecentActivityWidget({ limit = 5 }) {
       title="Recent Network Activity" 
       subtitle="Latest alerts from tracking developers"
       className="h-full flex flex-col"
+      innerClassName="flex-1 overflow-hidden flex flex-col"
     >
       <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4">
         {loading ? (

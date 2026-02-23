@@ -659,13 +659,27 @@ export default function DeveloperList() {
                   </td>
 
                   <td className="px-4 py-3 text-center">
-                    <div className={`
-                      inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold
-                      ${dev.activityScore >= 80 ? 'bg-success/15 text-success' : 
-                        dev.activityScore >= 50 ? 'bg-warning/15 text-warning' : 
-                        'bg-muted text-muted-foreground'}
-                    `}>
-                      {dev.activityScore}
+                    <div className="flex flex-col items-center gap-1">
+                      <div className={`
+                        inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold
+                        ${dev.activityScore >= 80 ? 'bg-success/15 text-success' : 
+                          dev.activityScore >= 50 ? 'bg-warning/15 text-warning' : 
+                          'bg-muted text-muted-foreground'}
+                      `}>
+                        {dev.activityScore}
+                      </div>
+                      <Badge 
+                        variant="default" 
+                        size="sm" 
+                        className={`
+                          text-[9px] uppercase tracking-tighter px-1 py-0 h-auto
+                          ${dev.readinessLevel === 'High' ? 'bg-success text-white' : 
+                            dev.readinessLevel === 'Medium' ? 'bg-warning text-black' : 
+                            'bg-danger text-white'}
+                        `}
+                      >
+                        {dev.readinessLevel || 'Low'}
+                      </Badge>
                     </div>
                   </td>
 

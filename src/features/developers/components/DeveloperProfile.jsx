@@ -257,9 +257,19 @@ export default function DeveloperProfile({ id }) {
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm relative">
         <div className="h-32 bg-gradient-to-r from-primary/80 to-primary relative">
           {/* Activity Score Card overlapping the cover banner */}
-          <div className="absolute top-4 right-6 flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/20 backdrop-blur-md px-6 py-2 min-w-[120px] shadow-sm">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">Activity Score</span>
-            <span className="text-3xl font-bold text-white leading-tight">{developer.activityScore}</span>
+          <div className="absolute top-4 right-6 flex flex-col items-end gap-2">
+            <div className="flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/20 backdrop-blur-md px-6 py-2 min-w-[120px] shadow-sm">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">Activity Score</span>
+              <span className="text-3xl font-bold text-white leading-tight">{developer.activityScore}</span>
+            </div>
+            <div className={`
+              px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border
+              ${developer.readinessLevel === 'High' ? 'bg-success border-success text-white' :
+                developer.readinessLevel === 'Medium' ? 'bg-warning border-warning text-black' :
+                'bg-danger border-danger text-white'}
+            `}>
+              {developer.readinessLevel || 'Low'} Readiness
+            </div>
           </div>
         </div>
         

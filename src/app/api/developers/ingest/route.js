@@ -6,7 +6,8 @@ import {
   createDeveloperDocument, 
   validateDeveloperInput,
   calculateActivityScore,
-  extractTechStack
+  extractTechStack,
+  calculateReadinessLevel
 } from '@/lib/models/developer.model';
 import { insertDeveloper } from '@/lib/repositories/developer.repository';
 
@@ -47,6 +48,11 @@ export async function POST(request) {
       daysSinceLastPush: githubData.daysSinceLastPush,
     });
 
+    const readinessLevel = calculateReadinessLevel({
+      daysSinceLastPush: githubData.daysSinceLastPush,
+      activityScore
+    });
+
     const rawDeveloperData = {
       username: githubData.username,
       name: githubData.name,
@@ -65,6 +71,7 @@ export async function POST(request) {
       totalStars: githubData.totalStars,
       totalForks: githubData.totalForks,
       activityScore,
+      readinessLevel,
       contributionCount: githubData.contributionCount,
       lastActivityAt: githubData.daysSinceLastPush <= 365 
         ? new Date(Date.now() - githubData.daysSinceLastPush * 24 * 60 * 60 * 1000) 

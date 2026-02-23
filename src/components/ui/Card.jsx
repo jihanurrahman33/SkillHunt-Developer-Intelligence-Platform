@@ -4,6 +4,7 @@ export default function Card({
   subtitle,
   action,
   className = '',
+  innerClassName = '',
   padding = true,
 }) {
   return (
@@ -26,7 +27,7 @@ export default function Card({
           {action && <div>{action}</div>}
         </div>
       )}
-      <div className={padding ? 'p-4' : ''}>
+      <div className={`${padding ? 'p-4' : ''} ${innerClassName}`}>
         {children}
       </div>
     </div>

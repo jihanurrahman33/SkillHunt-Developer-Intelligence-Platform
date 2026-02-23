@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useTheme } from '@/providers/ThemeContext';
-import { HiOutlineBell, HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
 
 export default function Header() {
   const { user } = useAuth();
@@ -26,12 +26,6 @@ export default function Header() {
           ) : (
             <HiOutlineMoon className="h-4 w-4" />
           )}
-        </button>
-
-        {/* Notifications */}
-        <button className="relative rounded-md p-2 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground">
-          <HiOutlineBell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
         </button>
 
         {/* User Avatar */}
