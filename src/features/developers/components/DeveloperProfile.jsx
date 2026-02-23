@@ -257,13 +257,13 @@ export default function DeveloperProfile({ id }) {
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm relative">
         <div className="h-32 bg-gradient-to-r from-primary/80 to-primary relative">
           {/* Activity Score Card overlapping the cover banner */}
-          <div className="absolute top-4 right-6 flex flex-col items-end gap-2">
-            <div className="flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/20 backdrop-blur-md px-6 py-2 min-w-[120px] shadow-sm">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">Activity Score</span>
-              <span className="text-3xl font-bold text-white leading-tight">{developer.activityScore}</span>
+          <div className="absolute top-4 right-4 sm:right-6 flex flex-col items-end gap-2 z-10">
+            <div className="flex flex-col items-center justify-center rounded-lg border border-white/20 bg-black/40 backdrop-blur-md px-4 sm:px-6 py-2 min-w-[100px] sm:min-w-[120px] shadow-sm">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white/90">Activity Score</span>
+              <span className="text-2xl sm:text-3xl font-bold text-white leading-tight">{developer.activityScore}</span>
             </div>
             <div className={`
-              px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border
+              px-2 sm:px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider shadow-sm border
               ${developer.readinessLevel === 'High' ? 'bg-success border-success text-white' :
                 developer.readinessLevel === 'Medium' ? 'bg-warning border-warning text-black' :
                 'bg-danger border-danger text-white'}
@@ -274,19 +274,19 @@ export default function DeveloperProfile({ id }) {
         </div>
         
         <div className="px-6 pb-6 relative">
-          <div className="flex items-end gap-5 relative -top-12 sm:-top-8 mb-[-2rem]">
-            <div className="rounded-xl border-4 border-surface bg-surface overflow-hidden h-24 w-24 shrink-0 shadow-md">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 sm:gap-5 relative -top-10 sm:-top-8 mb-[-1.5rem] sm:mb-[-2rem]">
+            <div className="rounded-xl border-4 border-surface bg-surface overflow-hidden h-20 w-20 sm:h-24 sm:w-24 shrink-0 shadow-md">
               {developer.avatarUrl ? (
                 <img src={developer.avatarUrl} alt={developer.name} className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-primary/20 text-3xl font-bold text-primary">
+                <div className="flex h-full w-full items-center justify-center bg-primary/20 text-2xl sm:text-3xl font-bold text-primary">
                   {developer.name?.charAt(0)?.toUpperCase()}
                 </div>
               )}
             </div>
-            <div className="pb-1">
-              <h1 className="text-2xl font-bold text-foreground">{developer.name}</h1>
-              <p className="text-muted-foreground">@{developer.username}</p>
+            <div className="pb-1 max-w-full">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{developer.name}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground truncate">@{developer.username}</p>
             </div>
           </div>
 
@@ -325,10 +325,10 @@ export default function DeveloperProfile({ id }) {
         </div>
         
         {/* Tabs inside the card footer */}
-        <div className="border-t border-border px-6 flex gap-6">
+        <div className="border-t border-border px-6 flex gap-6 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-3 text-sm font-medium transition-colors border-b-2 ${
+            className={`py-3 text-sm font-medium transition-colors border-b-2 shrink-0 ${
               activeTab === 'overview' 
                 ? 'border-primary text-primary' 
                 : 'border-transparent text-muted-foreground hover:text-foreground'

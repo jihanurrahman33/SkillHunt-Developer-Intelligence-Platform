@@ -70,6 +70,9 @@ export default function DeveloperList() {
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  
+  // Mobile Filter State
+  const [showFilters, setShowFilters] = useState(false);
 
   // Clear selections when filters or page change
   useEffect(() => {
@@ -351,29 +354,51 @@ export default function DeveloperList() {
             {pagination ? `${pagination.total} developers found` : 'Manage your talent pool'}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline"
             onClick={handleExportCSV}
             disabled={isExporting}
             loading={isExporting}
+            className="flex-1 sm:flex-none"
             icon={!isExporting && <HiOutlineDownload className="h-4 w-4" />}
           >
-            {selectedIds.length > 0 ? `Export (${selectedIds.length})` : 'Export CSV'}
+            <span className="hidden xs:inline">{selectedIds.length > 0 ? `Export (${selectedIds.length})` : 'Export CSV'}</span>
+            <span className="xs:hidden">{selectedIds.length > 0 ? `(${selectedIds.length})` : 'CSV'}</span>
           </Button>
           {!isAnalyst && (
             <Button 
               onClick={() => setIsModalOpen(true)}
+              className="flex-1 sm:flex-none"
               icon={<HiOutlinePlus className="h-4 w-4" />}
             >
-              Import from GitHub
+              <span className="hidden xs:inline">Import from GitHub</span>
+              <span className="xs:hidden">Import</span>
             </Button>
           )}
         </div>
       </div>
 
+      {/* Mobile Filter Toggle */}
+      <div className="mb-4 lg:hidden">
+        <Button 
+          variant="ghost" 
+          fullWidth
+          onClick={() => setShowFilters(!showFilters)}
+          className="justify-between border border-border bg-surface"
+        >
+          <span className="flex items-center gap-2">
+            <HiOutlineSearch className="h-4 w-4" />
+            {showFilters ? 'Hide Filters' : 'Show Filters & Search'}
+          </span>
+          <Badge variant="outline" className="ml-2">
+            {[search, techStack, location, status].filter(Boolean).length} Active
+          </Badge>
+        </Button>
+      </div>
+
       {/* Filters */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className={`mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5 ${showFilters ? 'grid' : 'hidden lg:grid'}`}>
         <Input
           placeholder="Search name, bio..."
           icon={<HiOutlineSearch className="h-4 w-4" />}
@@ -425,75 +450,81 @@ export default function DeveloperList() {
 
       {/* Bulk Actions Banner */}
       {selectedIds.length > 0 && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary-foreground sm:flex-nowrap">
-          <div className="flex items-center gap-2 font-medium shrink-0">
+        <div className="mb-4 flex flex-col gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary-foreground sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 font-medium">
             <Badge variant="default" className="text-xs bg-primary text-primary-foreground">{selectedIds.length}</Badge>
             <span className="text-foreground">Developer(s) selected</span>
           </div>
           {!isAnalyst && (
-            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-              <Select
-                options={[{ value: '', label: 'Change Status...' }, ...STATUS_OPTIONS]}
-                value=""
-                onChange={async (e) => {
-                  const newStatus = e.target.value;
-                  if (!newStatus) return;
-                  
-                  setIsBulkActionLoading(true);
-                  let successCount = 0;
-                  for (const id of selectedIds) {
-                    const res = await changeStatus(id, newStatus);
-                    if (res.success) successCount++;
-                  }
-                  setIsBulkActionLoading(false);
-                  setSelectedIds([]);
-                  
-                  Swal.fire({
-                    icon: 'success',
-                    title: 'Bulk Update',
-                    text: `Updated ${successCount} developer(s)`,
-                    toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
-                    background: '#0B1220', color: '#e2e8f0',
-                  });
-                }}
-              />
-              <Select
-                options={[
-                  { value: '', label: 'Assign to Campaign...' },
-                  { value: 'clear', label: '— Remove from Campaign —' },
-                  ...activeCampaignsOptions
-                ]}
-                value=""
-                onChange={async (e) => {
-                  const actionValue = e.target.value;
-                  if (!actionValue) return;
-
-                  const campaignId = actionValue === 'clear' ? null : actionValue;
-                  const actionText = campaignId === null ? 'Removed from campaign' : 'Assigned to campaign';
-
-                  setIsBulkActionLoading(true);
-                  const res = await bulkAssignCampaign(selectedIds, campaignId);
-                  setIsBulkActionLoading(false);
-                  setSelectedIds([]);
-
-                  if (res.success) {
+            <div className="grid grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:items-center">
+              <div className="xs:col-span-1">
+                <Select
+                  options={[{ value: '', label: 'Status...' }, ...STATUS_OPTIONS]}
+                  value=""
+                  className="w-full"
+                  onChange={async (e) => {
+                    const newStatus = e.target.value;
+                    if (!newStatus) return;
+                    
+                    setIsBulkActionLoading(true);
+                    let successCount = 0;
+                    for (const id of selectedIds) {
+                      const res = await changeStatus(id, newStatus);
+                      if (res.success) successCount++;
+                    }
+                    setIsBulkActionLoading(false);
+                    setSelectedIds([]);
+                    
                     Swal.fire({
                       icon: 'success',
                       title: 'Bulk Update',
-                      text: `Successfully ${actionText.toLowerCase()}`,
+                      text: `Updated ${successCount} developer(s)`,
                       toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
                       background: '#0B1220', color: '#e2e8f0',
                     });
-                  } else {
-                    Swal.fire({
-                      icon: 'error',
-                      title: 'Update Failed',
-                      text: res.error || 'Failed to apply bulk assignment',
-                      background: '#0B1220', color: '#e2e8f0',
-                    });
-                  }
-                }}
-              />
+                  }}
+                />
+              </div>
+              <div className="xs:col-span-1">
+                <Select
+                  options={[
+                    { value: '', label: 'Campaign...' },
+                    { value: 'clear', label: '— Unassign —' },
+                    ...activeCampaignsOptions
+                  ]}
+                  value=""
+                  className="w-full"
+                  onChange={async (e) => {
+                    const actionValue = e.target.value;
+                    if (!actionValue) return;
+
+                    const campaignId = actionValue === 'clear' ? null : actionValue;
+                    const actionText = campaignId === null ? 'Removed from campaign' : 'Assigned to campaign';
+
+                    setIsBulkActionLoading(true);
+                    const res = await bulkAssignCampaign(selectedIds, campaignId);
+                    setIsBulkActionLoading(false);
+                    setSelectedIds([]);
+
+                    if (res.success) {
+                      Swal.fire({
+                        icon: 'success',
+                        title: 'Bulk Update',
+                        text: `Successfully ${actionText.toLowerCase()}`,
+                        toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
+                        background: '#0B1220', color: '#e2e8f0',
+                      });
+                    } else {
+                      Swal.fire({
+                        icon: 'error',
+                        title: 'Update Failed',
+                        text: res.error || 'Failed to apply bulk assignment',
+                        background: '#0B1220', color: '#e2e8f0',
+                      });
+                    }
+                  }}
+                />
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -528,7 +559,7 @@ export default function DeveloperList() {
                   }
                 }}
                 loading={isBulkActionLoading}
-                className="border-danger/20 bg-danger/10 text-danger hover:bg-danger hover:text-white"
+                className="w-full xs:col-span-2 sm:w-auto border-danger/20 bg-danger/10 text-danger hover:bg-danger hover:text-white"
                 icon={<HiOutlineTrash className="h-4 w-4" />}
               >
                 Delete Selected
@@ -538,8 +569,109 @@ export default function DeveloperList() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      {/* Mobile Card View (shown only on small screens) */}
+      <div className="grid gap-4 sm:hidden">
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border bg-surface p-4 h-48" />
+          ))
+        ) : developers.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+            No developers found.
+          </div>
+        ) : (
+          developers.map((dev) => (
+            <div key={dev._id} className={`rounded-xl border border-border bg-surface p-4 shadow-sm transition-all sm:hidden ${selectedIds.includes(dev._id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <input 
+                      type="checkbox"
+                      className="absolute -left-1 -top-1 z-10 rounded border-border bg-background checked:bg-primary"
+                      checked={selectedIds.includes(dev._id)}
+                      onChange={() => handleSelectRow(dev._id)}
+                    />
+                    {dev.avatarUrl ? (
+                      <img src={dev.avatarUrl} alt={dev.name} className="h-12 w-12 rounded-full border border-border" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold border border-primary/20">
+                        {dev.name?.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <Link href={`/developers/${dev._id}`} className="block font-bold text-foreground truncate">{dev.name}</Link>
+                    <p className="text-xs text-muted-foreground">@{dev.username}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black
+                    ${dev.activityScore >= 80 ? 'bg-success/20 text-success' : dev.activityScore >= 50 ? 'bg-warning/20 text-warning' : 'bg-muted text-muted-foreground'}`}>
+                    {dev.activityScore}
+                  </div>
+                  <Badge 
+                    size="sm" 
+                    className={`text-[9px] uppercase font-bold
+                      ${dev.readinessLevel === 'High' ? 'bg-success text-white' : 
+                        dev.readinessLevel === 'Medium' ? 'bg-warning text-black' : 
+                        'bg-danger text-white'}`}
+                  >
+                    {dev.readinessLevel || 'Low'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-4 border-t border-border pt-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Status</p>
+                  <select
+                    value={dev.currentStatus}
+                    onChange={(e) => handleStatusChange(dev._id, e.target.value)}
+                    disabled={isAnalyst}
+                    className="w-full text-xs font-bold bg-surface-hover border border-border rounded-lg px-2 py-1.5 focus:outline-none"
+                  >
+                    {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Location</p>
+                  <p className="text-xs text-foreground truncate flex items-center gap-1">
+                    <HiOutlineLocationMarker className="h-3 w-3" />
+                    {dev.location || 'Unknown'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+                <div className="flex flex-wrap gap-1">
+                  {dev.techStack?.slice(0, 3).map(tech => (
+                    <Badge key={tech} size="sm" variant="outline" className="text-[10px] border-border">{tech}</Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                   <Link 
+                    href={`/developers/${dev._id}`}
+                    className="p-1.5 rounded-lg border border-border hover:bg-surface-hover text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <HiOutlineExternalLink className="h-4 w-4" />
+                  </Link>
+                  {!isAnalyst && (
+                    <button
+                      onClick={() => handleDelete(dev._id, dev.name)}
+                      className="p-1.5 rounded-lg border border-border hover:bg-surface-hover text-muted-foreground hover:text-danger transition-colors"
+                    >
+                      <HiOutlineTrash className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View (hidden on small screens) */}
+      <div className="hidden sm:block overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full text-left text-sm text-foreground">
           <thead className="border-b border-border bg-secondary/50 text-xs uppercase text-muted-foreground">
             <tr>
