@@ -23,7 +23,7 @@ export default function TopTechChart({ data = [] }) {
     <Card title="Top Skills" subtitle="Most common technologies in your talent pool" className="h-[400px] flex flex-col">
       <div className="w-full h-[320px] mt-2 pr-4">
         <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={formattedData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+          <BarChart data={formattedData} margin={{ top: 10, right: 10, left: -30, bottom: 40 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
             <XAxis 
               dataKey="name" 

@@ -74,6 +74,41 @@ export async function getDashboardAnalytics(userId) {
               _id: 0
             }
           }
+        ],
+        // Geo-Distribution
+        geoDistribution: [
+          { $match: { location: { $ne: null, $ne: '' } } },
+          {
+            $group: {
+              _id: '$location',
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { count: -1 } },
+          { $limit: 8 },
+          {
+            $project: {
+              location: '$_id',
+              count: 1,
+              _id: 0
+            }
+          }
+        ],
+        // Top Talent Spotlight
+        topTalent: [
+          { $sort: { activityScore: -1 } },
+          { $limit: 5 },
+          {
+            $project: {
+              name: 1,
+              username: 1,
+              avatarUrl: 1,
+              activityScore: 1,
+              readinessLevel: 1,
+              location: 1,
+              techStack: { $slice: ['$techStack', 3] }
+            }
+          }
         ]
       }
     }
@@ -115,7 +150,59 @@ export async function getDashboardAnalytics(userId) {
     }
   ]).toArray();
 
-  // 4. Format the final output
+  // 4. Campaign Performance Stats (Full Pipeline Breakdown)
+  const campaignPerformance = await campaignsCollection.aggregate([
+    { $match: { status: 'active', 'createdBy.id': userId } },
+    {
+      $lookup: {
+        from: 'developers',
+        let: { campaign_id: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $or: [
+                  { $eq: ['$campaignId', '$$campaign_id'] },
+                  { $eq: ['$campaignId', { $toString: '$$campaign_id' }] }
+                ]
+              }
+            }
+          }
+        ],
+        as: 'developers'
+      }
+    },
+    {
+      $project: {
+        title: 1,
+        developerCount: { $size: '$developers' },
+        // Breakthrough: Count each status type for the mini-funnel
+        statusBreakdown: {
+          $arrayToObject: {
+            $map: {
+              input: ['new', 'screening', 'interviewing', 'offered', 'hired', 'rejected'],
+              as: 's',
+              in: {
+                k: '$$s',
+                v: {
+                  $size: {
+                    $filter: {
+                      input: '$developers',
+                      as: 'd',
+                      cond: { $eq: ['$$d.currentStatus', '$$s'] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    { $limit: 10 }
+  ]).toArray();
+
+  // 5. Format the final output
   return {
     kpis: {
       totalDevelopers: results.totalDevelopers[0]?.count || 0,
@@ -125,6 +212,9 @@ export async function getDashboardAnalytics(userId) {
     },
     statusDistribution: results.statusDistribution,
     topTechStack: results.topTechStack,
+    geoDistribution: results.geoDistribution,
+    topTalent: results.topTalent,
+    campaignPerformance,
     activityTimeline
   };
 }

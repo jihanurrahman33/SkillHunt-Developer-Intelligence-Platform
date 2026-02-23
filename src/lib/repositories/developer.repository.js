@@ -146,7 +146,7 @@ export async function bulkUpdateCampaignAssignments(developerIds, campaignId, us
 
   const updateDoc = {
     $set: {
-      campaignId: campaignId,
+      campaignId: campaignId ? new ObjectId(campaignId) : null,
       updatedAt: new Date(),
     }
   };

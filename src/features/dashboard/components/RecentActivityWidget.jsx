@@ -104,13 +104,13 @@ export default function RecentActivityWidget({ limit = 5 }) {
                   </div>
                 </div>
                 
-                <div className="flex-1 pt-0.5">
+                <div className="flex-1 min-w-0 pt-0.5">
                   <div className="flex items-center justify-between gap-2">
                     <Link 
                       href={`/developers/${activity.developerId}`}
-                      className="text-sm font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+                      className="text-sm font-bold text-foreground hover:text-primary transition-colors flex items-center min-w-0 gap-1.5"
                     >
-                      {activity.developer.name}
+                      <span className="truncate">{activity.developer.name}</span>
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                         activity.developer.readinessLevel === 'High' ? 'bg-success' : 
                         activity.developer.readinessLevel === 'Medium' ? 'bg-warning' : 'bg-danger'

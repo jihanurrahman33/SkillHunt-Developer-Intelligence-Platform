@@ -5,8 +5,8 @@ export default function StatCard({ title, value, icon: Icon, trend, description 
     <Card className="flex flex-col h-full justify-between shadow-sm hover:border-primary/50 transition-colors">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
-          <h3 className="text-3xl font-bold tracking-tight text-foreground">{value}</h3>
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">{title}</p>
+          <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{value}</h3>
         </div>
         {Icon && (
           <div className="p-2.5 bg-primary/10 rounded-xl text-primary shrink-0">

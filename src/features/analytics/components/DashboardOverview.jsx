@@ -20,6 +20,18 @@ const TopTechChart = dynamic(() => import('./TopTechChart'), {
   ssr: false, 
   loading: () => <div className="h-[400px] flex items-center justify-center border border-border rounded-xl bg-surface animate-pulse text-muted-foreground">Loading chart...</div> 
 });
+const TalentGeoChart = dynamic(() => import('./TalentGeoChart'), { 
+  ssr: false, 
+  loading: () => <div className="h-[400px] flex items-center justify-center border border-border rounded-xl bg-surface animate-pulse text-muted-foreground">Loading map...</div> 
+});
+const CampaignPerformanceCard = dynamic(() => import('./CampaignPerformanceCard'), { 
+  ssr: false, 
+  loading: () => <div className="h-[400px] flex items-center justify-center border border-border rounded-xl bg-surface animate-pulse text-muted-foreground">Loading performance...</div> 
+});
+const TopTalentSpotlight = dynamic(() => import('./TopTalentSpotlight'), { 
+  ssr: false, 
+  loading: () => <div className="h-[400px] flex items-center justify-center border border-border rounded-xl bg-surface animate-pulse text-muted-foreground">Loading spotlight...</div> 
+});
 
 import { 
   HiOutlineUserGroup, 
@@ -64,14 +76,22 @@ export default function DashboardOverview() {
     );
   }
 
-  const { kpis, statusDistribution, activityTimeline, topTechStack } = data || {};
+  const { 
+    kpis, 
+    statusDistribution, 
+    activityTimeline, 
+    topTechStack, 
+    geoDistribution, 
+    topTalent, 
+    campaignPerformance 
+  } = data || {};
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Analytics Overview</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Monitor recruitment pipeline health and developer network trends.</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Recruitment Intelligence</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Real-time signal tracking across your talent network.</p>
         </div>
         <Button 
           variant="outline" 
@@ -80,7 +100,7 @@ export default function DashboardOverview() {
           className="shrink-0"
         >
           <HiOutlineRefresh className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Refreshing...' : 'Refresh Data'}
+          {loading ? 'Analyzing...' : 'Refresh Intel'}
         </Button>
       </div>
 
@@ -113,25 +133,36 @@ export default function DashboardOverview() {
         />
       </div>
 
-      {/* Charts Level 1 */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2">
+      {/* Level 1: Core Activity & Funnel */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+        <div className="lg:col-span-2 min-h-[400px]">
           <ActivityTimelineChart data={activityTimeline} />
         </div>
-        <div className="md:col-span-1">
+        <div className="lg:col-span-1 min-h-[400px]">
           <FunnelChart data={statusDistribution} />
         </div>
       </div>
 
-      {/* Charts Level 2 */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2">
+      {/* Level 2: Skills, Geo, and Campaign Performance */}
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <div className="h-[400px]">
           <TopTechChart data={topTechStack} />
         </div>
-        <div className="md:col-span-1">
-          <div className="h-[400px]">
-            <RecentActivityWidget limit={10} />
-          </div>
+        <div className="h-[400px]">
+          <TalentGeoChart data={geoDistribution} />
+        </div>
+        <div className="h-[400px] md:col-span-2 lg:col-span-1">
+          <CampaignPerformanceCard campaigns={campaignPerformance} />
+        </div>
+      </div>
+
+      {/* Level 3: Talent Highlight & Feed */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+        <div className="lg:col-span-2 h-[400px]">
+          <TopTalentSpotlight developers={topTalent} />
+        </div>
+        <div className="lg:col-span-1 h-[400px]">
+          <RecentActivityWidget limit={10} />
         </div>
       </div>
     </div>
