@@ -46,7 +46,8 @@ export async function POST(request) {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
-      role: 'recruiter', // new users are always recruiters
+      role: 'viewer', // new users start as viewers
+      onboardingStatus: 'none', // not yet requested recruiter access
       provider: 'credentials',
       image: null,
       createdAt: new Date(),

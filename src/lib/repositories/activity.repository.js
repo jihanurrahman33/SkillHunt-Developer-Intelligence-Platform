@@ -64,7 +64,6 @@ export async function getRecentGlobalActivity(userId, limit = 10) {
       }
     },
     { $unwind: '$developer' },
-    { $match: { 'developer.addedBy': userId } },
     { $sort: { createdAt: -1 } },
     { $limit: limit }
   ];

@@ -19,7 +19,11 @@ export default function UserManagement() {
     page,
     setPage,
     changeRole,
+    approveUser,
+    rejectUser,
   } = useUsers();
+
+  const [onboardingFilter, setOnboardingFilter] = useState('');
 
   const handleRoleChange = async (userId, userName, currentRole) => {
     const newRole = currentRole === 'admin' ? 'recruiter' : 'admin';
@@ -110,11 +114,26 @@ export default function UserManagement() {
             setRoleFilter(e.target.value);
             setPage(1);
           }}
-          className="w-full sm:w-48 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+          className="w-full sm:w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
         >
           <option value="">All Roles</option>
           <option value="admin">Admin</option>
           <option value="recruiter">Recruiter</option>
+          <option value="viewer">Viewer</option>
+        </select>
+
+        <select
+          value={onboardingFilter}
+          onChange={(e) => {
+            setOnboardingFilter(e.target.value);
+            setPage(1);
+          }}
+          className="w-full sm:w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+        >
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
         </select>
       </div>
 
@@ -143,12 +162,21 @@ export default function UserManagement() {
                 </div>
                 <div className="shrink-0">
                    <Badge
-                    variant={user.role === 'admin' ? 'info' : 'default'}
+                    variant={
+                      user.role === 'admin' ? 'info' : 
+                      user.role === 'recruiter' ? 'default' : 'default'
+                    }
                     dot
                     size="sm"
                   >
-                    {user.role === 'admin' ? 'Admin' : 'Recruiter'}
+                    {user.role === 'admin' ? 'Admin' : 
+                     user.role === 'recruiter' ? 'Recruiter' : 'Viewer'}
                   </Badge>
+                  {user.onboardingStatus === 'pending' && (
+                    <div className="mt-1">
+                      <Badge variant="warning" size="sm" className="animate-pulse">Pending</Badge>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -166,12 +194,29 @@ export default function UserManagement() {
               </div>
 
               <div className="mt-3 border-t border-border pt-3">
-                <button
-                  onClick={() => handleRoleChange(user._id, user.name, user.role)}
-                  className="w-full rounded-lg border border-primary/20 bg-primary/5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
-                >
-                  {user.role === 'admin' ? 'Demote to Recruiter' : 'Promote to Admin'}
-                </button>
+                {user.onboardingStatus === 'pending' ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => approveUser(user._id)}
+                      className="flex-1 rounded-lg bg-success/10 py-2 text-xs font-bold text-success transition-colors hover:bg-success hover:text-white"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => rejectUser(user._id)}
+                      className="flex-1 rounded-lg bg-danger/10 py-2 text-xs font-bold text-danger transition-colors hover:bg-danger hover:text-white"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleRoleChange(user._id, user.name, user.role)}
+                    className="w-full rounded-lg border border-primary/20 bg-primary/5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
+                  >
+                    {user.role === 'admin' ? 'Demote to Recruiter' : 'Promote to Admin'}
+                  </button>
+                )}
               </div>
             </div>
           ))
@@ -196,6 +241,9 @@ export default function UserManagement() {
                 Role
               </th>
               <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Joined
               </th>
               <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -211,6 +259,7 @@ export default function UserManagement() {
                   <td className="px-4 py-3"><div className="h-4 w-40 rounded bg-muted" /></td>
                   <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted" /></td>
                   <td className="px-4 py-3"><div className="h-5 w-20 rounded-full bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted" /></td>
                   <td className="px-4 py-3"><div className="h-4 w-24 rounded bg-muted" /></td>
                   <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted ml-auto" /></td>
                 </tr>
@@ -247,7 +296,10 @@ export default function UserManagement() {
                   </td>
                   <td className="px-4 py-3">
                     <Badge
-                      variant={user.role === 'admin' ? 'info' : 'default'}
+                      variant={
+                        user.role === 'admin' ? 'info' : 
+                        user.role === 'recruiter' ? 'success' : 'default'
+                      }
                       dot
                     >
                       {user.role === 'admin' ? (
@@ -255,13 +307,26 @@ export default function UserManagement() {
                           <HiOutlineShieldCheck className="h-3 w-3" />
                           Admin
                         </span>
-                      ) : (
+                      ) : user.role === 'recruiter' ? (
                         <span className="flex items-center gap-1">
                           <HiOutlineUser className="h-3 w-3" />
                           Recruiter
                         </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <HiOutlineUser className="h-3 w-3" />
+                          Viewer
+                        </span>
                       )}
                     </Badge>
+                    {user.onboardingStatus === 'pending' && (
+                      <Badge variant="warning" size="sm" className="ml-2 animate-pulse">Requesting Access</Badge>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs text-muted-foreground">
+                      {user.onboardingStatus || '—'}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
                     {user.createdAt
@@ -273,12 +338,31 @@ export default function UserManagement() {
                       : '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleRoleChange(user._id, user.name, user.role)}
-                      className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
-                    >
-                      {user.role === 'admin' ? 'Make Recruiter' : 'Make Admin'}
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      {user.onboardingStatus === 'pending' ? (
+                        <>
+                          <button
+                            onClick={() => approveUser(user._id)}
+                            className="text-xs font-bold text-success hover:text-success/80 transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => rejectUser(user._id)}
+                            className="text-xs font-bold text-danger hover:text-danger/80 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => handleRoleChange(user._id, user.name, user.role)}
+                          className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
+                        >
+                          {user.role === 'admin' ? 'Make Recruiter' : 'Make Admin'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

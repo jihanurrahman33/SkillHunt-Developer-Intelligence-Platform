@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
     isAdmin: user?.role === 'admin',
     isRecruiter: user?.role === 'recruiter',
     isAnalyst: user?.role === 'analyst',
+    onboardingStatus: user?.onboardingStatus || null,
   };
 
   return (

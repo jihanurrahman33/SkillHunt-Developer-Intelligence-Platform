@@ -49,6 +49,7 @@ export const authOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          onboardingStatus: user.onboardingStatus || 'none',
           image: user.image || null,
         };
       },
@@ -69,7 +70,8 @@ export const authOptions = {
               name: user.name,
               email: user.email,
               image: user.image,
-              role: 'recruiter',
+              role: 'viewer',
+              onboardingStatus: 'none',
               provider: account.provider,
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -99,6 +101,7 @@ export const authOptions = {
       // On initial sign-in, attach role from the user object
       if (user) {
         token.role = user.role;
+        token.onboardingStatus = user.onboardingStatus;
         token.id = user.id;
       }
 
@@ -110,6 +113,7 @@ export const authOptions = {
         });
         if (dbUser) {
           token.role = dbUser.role;
+          token.onboardingStatus = dbUser.onboardingStatus;
           token.id = dbUser._id.toString();
         }
       }
@@ -121,6 +125,7 @@ export const authOptions = {
       if (token) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.onboardingStatus = token.onboardingStatus;
       }
       return session;
     },

@@ -7,108 +7,48 @@ import connectToDatabase from '@/lib/db';
  */
 export async function getDashboardAnalytics(userId) {
   const db = await connectToDatabase();
-  
-  // We'll aggregate across multiple collections, but developers is the main one
   const developersCollection = db.collection('developers');
   const campaignsCollection = db.collection('campaigns');
+  const activityLogsCollection = db.collection('activityLogs');
   
-  // 1. Get Campaign Stats (Separate query since it's a different collection)
-  const campaignsCount = await campaignsCollection.countDocuments({ status: 'active', 'createdBy.id': userId });
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  // 2. Main Aggregation Pipeline on Developers
+  // 1. Get Global Developer Stats & KPIs (Global Registry Alignment)
   const pipeline = [
-    { $match: { addedBy: userId } },
     {
       $facet: {
-        // KPI: Total Developers
-        totalDevelopers: [
-          { $count: 'count' }
-        ],
-        // KPI: Total Hired
+        totalDevelopers: [{ $count: 'count' }],
         totalHired: [
           { $match: { currentStatus: 'hired' } },
           { $count: 'count' }
         ],
-        // KPI: Active this week (last 7 days)
         activeThisWeek: [
-          { 
-            $match: { 
-              lastActivityAt: { 
-                $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) 
-              } 
-            } 
-          },
+          { $match: { lastActivityAt: { $gte: sevenDaysAgo } } },
           { $count: 'count' }
         ],
-        // Funnel Distribution
         statusDistribution: [
-          {
-            $group: {
-              _id: { $ifNull: ['$currentStatus', 'new'] }, // Default to 'new' if not set
-              count: { $sum: 1 }
-            }
-          },
-          {
-            $project: {
-              status: '$_id',
-              count: 1,
-              _id: 0
-            }
-          }
+          { $group: { _id: { $ifNull: ['$currentStatus', 'new'] }, count: { $sum: 1 } } },
+          { $project: { status: '$_id', count: 1, _id: 0 } }
         ],
-        // Top Tech Stack (Global)
         topTechStack: [
           { $unwind: '$techStack' },
-          {
-            $group: {
-              _id: '$techStack',
-              count: { $sum: 1 }
-            }
-          },
+          { $group: { _id: '$techStack', count: { $sum: 1 } } },
           { $sort: { count: -1 } },
           { $limit: 5 },
-          {
-            $project: {
-              technology: '$_id',
-              count: 1,
-              _id: 0
-            }
-          }
+          { $project: { technology: '$_id', count: 1, _id: 0 } }
         ],
-        // Geo-Distribution
         geoDistribution: [
           { $match: { location: { $ne: null, $ne: '' } } },
-          {
-            $group: {
-              _id: '$location',
-              count: { $sum: 1 }
-            }
-          },
+          { $group: { _id: '$location', count: { $sum: 1 } } },
           { $sort: { count: -1 } },
           { $limit: 8 },
-          {
-            $project: {
-              location: '$_id',
-              count: 1,
-              _id: 0
-            }
-          }
+          { $project: { location: '$_id', count: 1, _id: 0 } }
         ],
-        // Top Talent Spotlight
         topTalent: [
           { $sort: { activityScore: -1 } },
           { $limit: 5 },
-          {
-            $project: {
-              name: 1,
-              username: 1,
-              avatarUrl: 1,
-              activityScore: 1,
-              readinessLevel: 1,
-              location: 1,
-              techStack: { $slice: ['$techStack', 3] }
-            }
-          }
+          { $project: { name: 1, username: 1, avatarUrl: 1, activityScore: 1, readinessLevel: 1, techStack: { $slice: ['$techStack', 3] } } }
         ]
       }
     }
@@ -116,43 +56,34 @@ export async function getDashboardAnalytics(userId) {
 
   const [results] = await developersCollection.aggregate(pipeline).toArray();
 
-  // 3. Activity Timeline (from activityLogs collection)
-  const activityLogsCollection = db.collection('activityLogs');
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  
+  // 2. Throughput & Activity (History-Based Metrics)
   const activityTimeline = await activityLogsCollection.aggregate([
     { $match: { createdAt: { $gte: thirtyDaysAgo } } },
     {
-      $lookup: {
-        from: 'developers',
-        localField: 'developerId',
-        foreignField: '_id',
-        as: 'developer'
-      }
-    },
-    { $unwind: '$developer' },
-    { $match: { 'developer.addedBy': userId } },
-    {
       $group: {
-        _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
-        },
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
         count: { $sum: 1 }
       }
     },
     { $sort: { _id: 1 } },
-    {
-      $project: {
-        date: '$_id',
-        count: 1,
-        _id: 0
-      }
-    }
+    { $project: { date: '$_id', count: 1, _id: 0 } }
   ]).toArray();
 
-  // 4. Campaign Performance Stats (Full Pipeline Breakdown)
+  // 3. Historical Throughput by Status (Requirement 13)
+  const historicalThroughput = await activityLogsCollection.aggregate([
+    { 
+      $match: { 
+        type: 'status_change',
+        createdAt: { $gte: thirtyDaysAgo }
+      } 
+    },
+    { $group: { _id: '$details.newStatus', count: { $sum: 1 } } },
+    { $project: { status: '$_id', count: 1, _id: 0 } }
+  ]).toArray();
+
+  // 4. Campaign Performance (Global view for Intelligence)
   const campaignPerformance = await campaignsCollection.aggregate([
-    { $match: { status: 'active', 'createdBy.id': userId } },
+    { $match: { status: 'active' } },
     {
       $lookup: {
         from: 'developers',
@@ -176,11 +107,10 @@ export async function getDashboardAnalytics(userId) {
       $project: {
         title: 1,
         developerCount: { $size: '$developers' },
-        // Breakthrough: Count each status type for the mini-funnel
         statusBreakdown: {
           $arrayToObject: {
             $map: {
-              input: ['new', 'screening', 'interviewing', 'offered', 'hired', 'rejected'],
+              input: ['new', 'contacted', 'interviewing', 'hired', 'rejected'],
               as: 's',
               in: {
                 k: '$$s',
@@ -202,19 +132,21 @@ export async function getDashboardAnalytics(userId) {
     { $limit: 10 }
   ]).toArray();
 
-  // 5. Format the final output
+  const totalCampaigns = await campaignsCollection.countDocuments({ status: 'active' });
+
   return {
     kpis: {
       totalDevelopers: results.totalDevelopers[0]?.count || 0,
       totalHired: results.totalHired[0]?.count || 0,
       activeThisWeek: results.activeThisWeek[0]?.count || 0,
-      activeCampaigns: campaignsCount
+      activeCampaigns: totalCampaigns
     },
     statusDistribution: results.statusDistribution,
     topTechStack: results.topTechStack,
     geoDistribution: results.geoDistribution,
     topTalent: results.topTalent,
     campaignPerformance,
-    activityTimeline
+    activityTimeline,
+    throughput: historicalThroughput
   };
 }

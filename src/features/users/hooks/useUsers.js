@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchUsers, updateUserRole } from '@/features/users/services/users.service';
+import { fetchUsers, updateUserRole, updateUser } from '@/features/users/services/users.service';
 
 export default function useUsers() {
   const [users, setUsers] = useState([]);
@@ -35,6 +35,34 @@ export default function useUsers() {
     loadUsers();
   }, [loadUsers]);
 
+  const approveUser = async (userId, role = 'recruiter') => {
+    try {
+      await updateUser(userId, { role, onboardingStatus: 'approved' });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === userId ? { ...u, role, onboardingStatus: 'approved' } : u
+        )
+      );
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const rejectUser = async (userId) => {
+    try {
+      await updateUser(userId, { onboardingStatus: 'rejected' });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === userId ? { ...u, onboardingStatus: 'rejected' } : u
+        )
+      );
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
   const changeRole = async (userId, newRole) => {
     try {
       await updateUserRole(userId, newRole);
@@ -62,6 +90,8 @@ export default function useUsers() {
     page,
     setPage,
     changeRole,
+    approveUser,
+    rejectUser,
     reload: loadUsers,
   };
 }

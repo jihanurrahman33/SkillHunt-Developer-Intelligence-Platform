@@ -86,14 +86,21 @@ export async function PATCH(request) {
 
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $set: { role, updatedAt: new Date() } }
+      { 
+        $set: { 
+          role, 
+          // If moving to recruiter/admin, ensure onboarding is marked as approved
+          ...(body.onboardingStatus ? { onboardingStatus: body.onboardingStatus } : {}),
+          updatedAt: new Date() 
+        } 
+      }
     );
 
     if (result.matchedCount === 0) {
       return apiError('User not found', 404);
     }
 
-    return apiSuccess({ message: 'Role updated successfully' });
+    return apiSuccess({ message: 'User updated successfully' });
   } catch (error) {
     console.error('Users PATCH error:', error);
     return apiError('Failed to update user role');
