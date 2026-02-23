@@ -134,6 +134,7 @@ export default function CampaignFormModal({ isOpen, onClose, editingCampaign = n
           >
             <option value="draft">Draft</option>
             <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
             <option value="closed">Closed</option>
           </select>
         </div>

@@ -4,7 +4,7 @@ import { getRecentGlobalActivity } from '@/lib/repositories/activity.repository'
 
 // GET /api/activity/recent
 export async function GET(request) {
-  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  const auth = await verifyAuth(request, ['admin', 'recruiter', 'analyst']);
   if (auth.error) return auth.error;
 
   try {

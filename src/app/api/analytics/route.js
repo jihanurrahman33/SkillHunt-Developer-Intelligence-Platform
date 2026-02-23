@@ -6,7 +6,7 @@ import { getDashboardAnalytics } from '@/lib/repositories/analytics.repository';
 // GET /api/analytics
 export async function GET(request) {
   // Ensure only admins and recruiters have access to aggregate data
-  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  const auth = await verifyAuth(request, ['admin', 'recruiter', 'analyst']);
   if (auth.error) return auth.error;
 
   try {

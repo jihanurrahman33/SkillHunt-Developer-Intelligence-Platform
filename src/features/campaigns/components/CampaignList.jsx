@@ -9,8 +9,10 @@ import Input from '@/components/ui/Input';
 import { formatDistanceToNow } from 'date-fns';
 import { HiOutlineSearch, HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineUsers } from 'react-icons/hi';
 import Link from 'next/link';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 export default function CampaignList() {
+  const { isAnalyst } = useAuth();
   const { campaigns, loading, error, search, setSearch, removeCampaign } = useCampaignContext();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,12 +58,14 @@ export default function CampaignList() {
             Manage your recruitment efforts and hiring pipelines.
           </p>
         </div>
-        <Button 
-          onClick={openCreateModal}
-          icon={<HiOutlinePlus className="h-4 w-4" />}
-        >
-          New Campaign
-        </Button>
+        {!isAnalyst && (
+          <Button 
+            onClick={openCreateModal}
+            icon={<HiOutlinePlus className="h-4 w-4" />}
+          >
+            New Campaign
+          </Button>
+        )}
       </div>
 
       {/* Filters (Basic) */}
@@ -140,20 +144,24 @@ export default function CampaignList() {
                       >
                         <HiOutlineUsers className="h-4 w-4" />
                       </Link>
-                      <button 
-                        onClick={() => openEditModal(camp)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-surface hover:text-primary transition-colors"
-                        title="Edit Campaign"
-                      >
-                        <HiOutlinePencil className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => removeCampaign(camp._id)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-danger/10 hover:text-danger transition-colors"
-                        title="Delete Campaign"
-                      >
-                        <HiOutlineTrash className="h-4 w-4" />
-                      </button>
+                      {!isAnalyst && (
+                        <>
+                          <button 
+                            onClick={() => openEditModal(camp)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-surface hover:text-primary transition-colors"
+                            title="Edit Campaign"
+                          >
+                            <HiOutlinePencil className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => removeCampaign(camp._id)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-danger/10 hover:text-danger transition-colors"
+                            title="Delete Campaign"
+                          >
+                            <HiOutlineTrash className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -27,10 +27,27 @@ export async function addDevNote(developerId, author, text) {
 
 export async function getDevNotes(developerId) {
   const db = await connectToDatabase();
+  
+  // 1. Get the current developer document to find its underlying global proxy (profileHash)
+  const devDoc = await db.collection('developers').findOne({ _id: new ObjectId(developerId) }, { projection: { profileHash: 1 } });
+  
+  if (!devDoc || !devDoc.profileHash) {
+    // Fallback to strict ID check if something is wrong
+    const notes = await db.collection(COLLECTION)
+      .find({ developerId: new ObjectId(developerId) })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return notes.map(n => ({ ...n, _id: n._id.toString(), developerId: n.developerId.toString() }));
+  }
 
+  // 2. Find ALL developer instances across the entire system that represent this same real-world developer
+  const sharedDevs = await db.collection('developers').find({ profileHash: devDoc.profileHash }, { projection: { _id: 1 } }).toArray();
+  const sharedIds = sharedDevs.map(d => d._id);
+
+  // 3. Fetch all notes attached to any of those instances
   const notes = await db
     .collection(COLLECTION)
-    .find({ developerId: new ObjectId(developerId) })
+    .find({ developerId: { $in: sharedIds } })
     .sort({ createdAt: -1 })
     .toArray();
 

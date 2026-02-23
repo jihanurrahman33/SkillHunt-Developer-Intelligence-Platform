@@ -5,7 +5,7 @@ import { findDevelopers } from '@/lib/repositories/developer.repository';
 // GET /api/developers
 // List developers with search, filtering, and pagination
 export async function GET(request) {
-  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  const auth = await verifyAuth(request, ['admin', 'recruiter', 'analyst']);
   if (auth.error) return auth.error;
 
   try {

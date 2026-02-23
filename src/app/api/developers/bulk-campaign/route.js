@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAuth, apiSuccess, apiError } from '@/lib/api-guard';
 import { bulkUpdateCampaignAssignments } from '@/lib/repositories/developer.repository';
+import { logActivity } from '@/lib/repositories/activity.repository';
 
 // POST /api/developers/bulk-campaign
 // Assigns or removes multiple developers from a campaign simultaneously
@@ -29,6 +30,22 @@ export async function POST(request) {
       auth.user.id,
       newStatus
     );
+
+    // Record activity logs for each successful assignment for audit history (Req 5 & 10)
+    if (updatedCount > 0) {
+      await Promise.all(developerIds.map(devId => 
+        logActivity({
+          developerId: devId,
+          type: newStatus ? 'status_change' : 'campaign_assignment',
+          details: {
+            campaignId: campaignId || 'unassigned',
+            newStatus: newStatus || undefined,
+            changedBy: auth.user.name,
+            context: 'bulk_operation'
+          }
+        })
+      ));
+    }
 
     return apiSuccess({
       message: `Successfully synchronized campaign status for ${updatedCount} developers`,

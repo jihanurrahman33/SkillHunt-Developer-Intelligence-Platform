@@ -5,7 +5,7 @@ import { findDeveloperById, deleteDeveloperById } from '@/lib/repositories/devel
 // GET /api/developers/[id]
 // Get a single developer by ID
 export async function GET(request, { params }) {
-  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  const auth = await verifyAuth(request, ['admin', 'recruiter', 'analyst']);
   if (auth.error) return auth.error;
 
   try {

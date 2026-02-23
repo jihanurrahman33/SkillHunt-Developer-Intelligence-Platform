@@ -3,7 +3,7 @@ import { verifyAuth, apiError, apiSuccess } from '@/lib/api-guard';
 import { addDevNote, getDevNotes } from '@/lib/repositories/recruitment.repository';
 
 export async function GET(request, { params }) {
-  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  const auth = await verifyAuth(request, ['admin', 'recruiter', 'analyst']);
   if (auth.error) return auth.error;
 
   try {

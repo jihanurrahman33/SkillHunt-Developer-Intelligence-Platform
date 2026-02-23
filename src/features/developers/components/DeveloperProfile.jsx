@@ -9,6 +9,7 @@ import {
   updateDeveloperNote,
   deleteDeveloperNote
 } from '@/features/developers/services/developer.service';
+import { getDeveloperActivity } from '@/features/developers/services/activity.service';
 import { useCampaignContext } from '@/features/campaigns/context/CampaignContext';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import Card from '@/components/ui/Card';
@@ -24,6 +25,7 @@ const ActivityFeed = dynamic(() => import('@/features/developers/components/Acti
 });
 import Link from 'next/link';
 import Swal from 'sweetalert2';
+import ProfileActivityChart from './ProfileActivityChart';
 import { 
   HiOutlineLocationMarker, 
   HiOutlineOfficeBuilding, 
@@ -49,7 +51,7 @@ const STATUS_OPTIONS = [
 
 export default function DeveloperProfile({ id }) {
   const { campaigns } = useCampaignContext();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isAnalyst } = useAuth();
   const [developer, setDeveloper] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,18 +64,21 @@ export default function DeveloperProfile({ id }) {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteText, setEditingNoteText] = useState('');
   const [isNoteUpdating, setIsNoteUpdating] = useState(false);
+  const [activities, setActivities] = useState([]);
   const [activeTab, setActiveTab] = useState('overview'); // overview, notes
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
-        const [devData, notesData] = await Promise.all([
+        const [devData, notesData, activitiesData] = await Promise.all([
           fetchDeveloperById(id),
-          getDeveloperNotes(id)
+          getDeveloperNotes(id),
+          getDeveloperActivity(id, 50) // Fetch enough for the trend chart
         ]);
         setDeveloper(devData);
         setNotes(notesData || []);
+        setActivities(activitiesData || []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -222,9 +227,10 @@ export default function DeveloperProfile({ id }) {
           <select
             value={developer.currentStatus}
             onChange={(e) => handleStatusChange(e.target.value)}
-            disabled={isUpdating}
+            disabled={isUpdating || isAnalyst}
             className={`
-              h-9 cursor-pointer rounded-md border px-3 text-sm font-medium outline-none transition-colors
+              h-9 rounded-md border px-3 text-sm font-medium outline-none transition-colors
+              ${isAnalyst ? 'cursor-default opacity-80' : 'cursor-pointer'}
               disabled:opacity-50 disabled:cursor-not-allowed
               ${developer.currentStatus === 'new' ? 'bg-status-new/10 border-status-new/20 text-status-new' :
                 developer.currentStatus === 'contacted' ? 'bg-status-contacted/10 border-status-contacted/20 text-status-contacted' :
@@ -451,9 +457,20 @@ export default function DeveloperProfile({ id }) {
           </div>
         </div>
       ) : activeTab === 'activity' ? (
-        /* Activity Tab Content */
-        <div className="md:col-span-3">
-          <Card title="Timeline" subtitle="Live updates sourced from background synchronization">
+        /* Right Sidebar */
+        <div className="space-y-6">
+          {/* Activity Pulse Chart (Requirement 3: Trends) */}
+          <ProfileActivityChart 
+            data={Object.entries(
+              activities.reduce((acc, curr) => {
+                const date = new Date(curr.createdAt).toISOString().split('T')[0];
+                acc[date] = (acc[date] || 0) + 1;
+                return acc;
+              }, {})
+            ).map(([date, count]) => ({ date, count }))}
+          />
+
+          <Card title="Activity Feed" subtitle="Background events detected by SkilHunt worker">
             <ActivityFeed developerId={id} />
           </Card>
         </div>
@@ -462,20 +479,23 @@ export default function DeveloperProfile({ id }) {
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2">
             <Card title="Recruiter Notes" subtitle="Internal notes and history for this developer">
-              <form onSubmit={handleAddNote} className="mb-8">
-                <textarea
-                  placeholder="Add a note about this developer..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  className="w-full min-h-[100px] resize-y rounded-md border border-border bg-background p-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary mb-3"
-                  required
-                />
-                <div className="flex justify-end">
-                  <Button type="submit" loading={isNoteSubmitting} disabled={!newNote.trim()}>
-                    Save Note
-                  </Button>
-                </div>
-              </form>
+              {/* Add Note Form - Only for Recruiters/Admins */}
+              {!isAnalyst && (
+                <form onSubmit={handleAddNote} className="mb-8">
+                  <textarea
+                    placeholder="Add a note about this developer..."
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    className="w-full min-h-[100px] resize-y rounded-md border border-border bg-background p-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary mb-3"
+                    required
+                  />
+                  <div className="flex justify-end">
+                    <Button type="submit" loading={isNoteSubmitting} disabled={!newNote.trim()}>
+                      Save Note
+                    </Button>
+                  </div>
+                </form>
+              )}
 
               <div className="space-y-4">
                 {notes.length === 0 ? (
@@ -485,7 +505,7 @@ export default function DeveloperProfile({ id }) {
                   </div>
                 ) : (
                   notes.map((note) => (
-                    <div key={note._id} className="rounded-lg border border-border bg-background p-4">
+                    <div key={note._id} className="group rounded-lg border border-border bg-background p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-1 ring-primary/20">
@@ -501,21 +521,21 @@ export default function DeveloperProfile({ id }) {
                             <HiOutlineClock className="h-3.5 w-3.5" />
                             {new Date(note.createdAt).toLocaleDateString()}
                           </span>
-                          {(user?.id === note.author?.id || isAdmin) && (
-                            <div className="flex items-center gap-1">
+                          {!isAnalyst && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={() => { setEditingNoteId(note._id); setEditingNoteText(note.text); }}
-                                className="p-1 text-muted-foreground hover:text-primary transition-colors hover:bg-surface rounded"
+                                className="p-1 hover:text-primary transition-colors"
                                 title="Edit Note"
                               >
-                                <HiOutlinePencil className="h-4 w-4" />
+                                <HiOutlinePencil className="h-3.5 w-3.5" />
                               </button>
                               <button 
                                 onClick={() => handleDeleteNote(note._id)}
-                                className="p-1 text-muted-foreground hover:text-danger transition-colors hover:bg-surface rounded"
+                                className="p-1 hover:text-danger transition-colors"
                                 title="Delete Note"
                               >
-                                <HiOutlineTrash className="h-4 w-4" />
+                                <HiOutlineTrash className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           )}

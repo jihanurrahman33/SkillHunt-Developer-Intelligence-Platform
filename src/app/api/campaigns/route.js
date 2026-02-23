@@ -3,7 +3,7 @@ import { verifyAuth, apiSuccess, apiError } from '@/lib/api-guard';
 import { getCampaigns, createCampaign } from '@/lib/repositories/campaign.repository';
 
 export async function GET(request) {
-  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  const auth = await verifyAuth(request, ['admin', 'recruiter', 'analyst']);
   if (auth.error) return auth.error;
 
   try {

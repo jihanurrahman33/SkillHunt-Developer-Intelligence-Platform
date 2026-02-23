@@ -4,7 +4,7 @@ import { getDeveloperActivity } from '@/lib/repositories/activity.repository';
 
 // GET /api/developers/[id]/activity
 export async function GET(request, { params }) {
-  const auth = await verifyAuth(request, ['admin', 'recruiter']);
+  const auth = await verifyAuth(request, ['admin', 'recruiter', 'analyst']);
   if (auth.error) return auth.error;
 
   try {

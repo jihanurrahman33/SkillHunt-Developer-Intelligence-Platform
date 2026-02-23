@@ -10,6 +10,7 @@ import { useCampaignContext } from '@/features/campaigns/context/CampaignContext
 import Modal from '@/components/modals/Modal';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { fetchDevelopers } from '@/features/developers/services/developer.service';
 import { 
   HiOutlineSearch, 
@@ -55,6 +56,7 @@ export default function DeveloperList() {
     bulkAssignCampaign, // New hook function
   } = useDeveloperContext();
 
+  const { isAnalyst } = useAuth();
   const { campaigns } = useCampaignContext();
   const activeCampaignsOptions = (campaigns || [])
     .filter(c => c.status === 'active')
@@ -359,12 +361,14 @@ export default function DeveloperList() {
           >
             {selectedIds.length > 0 ? `Export (${selectedIds.length})` : 'Export CSV'}
           </Button>
-          <Button 
-            onClick={() => setIsModalOpen(true)}
-            icon={<HiOutlinePlus className="h-4 w-4" />}
-          >
-            Import from GitHub
-          </Button>
+          {!isAnalyst && (
+            <Button 
+              onClick={() => setIsModalOpen(true)}
+              icon={<HiOutlinePlus className="h-4 w-4" />}
+            >
+              Import from GitHub
+            </Button>
+          )}
         </div>
       </div>
 
@@ -426,88 +430,19 @@ export default function DeveloperList() {
             <Badge variant="default" className="text-xs bg-primary text-primary-foreground">{selectedIds.length}</Badge>
             <span className="text-foreground">Developer(s) selected</span>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-            <Select
-              options={[{ value: '', label: 'Change Status...' }, ...STATUS_OPTIONS]}
-              value=""
-              onChange={async (e) => {
-                const newStatus = e.target.value;
-                if (!newStatus) return;
-                
-                setIsBulkActionLoading(true);
-                let successCount = 0;
-                for (const id of selectedIds) {
-                  const res = await changeStatus(id, newStatus);
-                  if (res.success) successCount++;
-                }
-                setIsBulkActionLoading(false);
-                setSelectedIds([]);
-                
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Bulk Update',
-                  text: `Updated ${successCount} developer(s)`,
-                  toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
-                  background: '#0B1220', color: '#e2e8f0',
-                });
-              }}
-            />
-            <Select
-              options={[
-                { value: '', label: 'Assign to Campaign...' },
-                { value: 'clear', label: '— Remove from Campaign —' },
-                ...activeCampaignsOptions
-              ]}
-              value=""
-              onChange={async (e) => {
-                const actionValue = e.target.value;
-                if (!actionValue) return;
-
-                const campaignId = actionValue === 'clear' ? null : actionValue;
-                const actionText = campaignId === null ? 'Removed from campaign' : 'Assigned to campaign';
-
-                setIsBulkActionLoading(true);
-                const res = await bulkAssignCampaign(selectedIds, campaignId);
-                setIsBulkActionLoading(false);
-                setSelectedIds([]);
-
-                if (res.success) {
-                  Swal.fire({
-                    icon: 'success',
-                    title: 'Bulk Update',
-                    text: `Successfully ${actionText.toLowerCase()}`,
-                    toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
-                    background: '#0B1220', color: '#e2e8f0',
-                  });
-                } else {
-                  Swal.fire({
-                    icon: 'error',
-                    title: 'Update Failed',
-                    text: res.error || 'Failed to apply bulk assignment',
-                    background: '#0B1220', color: '#e2e8f0',
-                  });
-                }
-              }}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                const confirm = await Swal.fire({
-                  title: 'Are you sure?',
-                  text: `You are about to delete ${selectedIds.length} developer(s).`,
-                  icon: 'warning',
-                  showCancelButton: true,
-                  confirmButtonColor: '#ef4444',
-                  confirmButtonText: 'Yes, delete them!',
-                  background: '#0B1220', color: '#e2e8f0',
-                });
-
-                if (confirm.isConfirmed) {
+          {!isAnalyst && (
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+              <Select
+                options={[{ value: '', label: 'Change Status...' }, ...STATUS_OPTIONS]}
+                value=""
+                onChange={async (e) => {
+                  const newStatus = e.target.value;
+                  if (!newStatus) return;
+                  
                   setIsBulkActionLoading(true);
                   let successCount = 0;
                   for (const id of selectedIds) {
-                    const res = await removeDeveloper(id);
+                    const res = await changeStatus(id, newStatus);
                     if (res.success) successCount++;
                   }
                   setIsBulkActionLoading(false);
@@ -515,20 +450,91 @@ export default function DeveloperList() {
                   
                   Swal.fire({
                     icon: 'success',
-                    title: 'Deleted!',
-                    text: `Removed ${successCount} developer(s)`,
+                    title: 'Bulk Update',
+                    text: `Updated ${successCount} developer(s)`,
                     toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
                     background: '#0B1220', color: '#e2e8f0',
                   });
-                }
-              }}
-              loading={isBulkActionLoading}
-              className="border-danger/20 bg-danger/10 text-danger hover:bg-danger hover:text-white"
-              icon={<HiOutlineTrash className="h-4 w-4" />}
-            >
-              Delete Selected
-            </Button>
-          </div>
+                }}
+              />
+              <Select
+                options={[
+                  { value: '', label: 'Assign to Campaign...' },
+                  { value: 'clear', label: '— Remove from Campaign —' },
+                  ...activeCampaignsOptions
+                ]}
+                value=""
+                onChange={async (e) => {
+                  const actionValue = e.target.value;
+                  if (!actionValue) return;
+
+                  const campaignId = actionValue === 'clear' ? null : actionValue;
+                  const actionText = campaignId === null ? 'Removed from campaign' : 'Assigned to campaign';
+
+                  setIsBulkActionLoading(true);
+                  const res = await bulkAssignCampaign(selectedIds, campaignId);
+                  setIsBulkActionLoading(false);
+                  setSelectedIds([]);
+
+                  if (res.success) {
+                    Swal.fire({
+                      icon: 'success',
+                      title: 'Bulk Update',
+                      text: `Successfully ${actionText.toLowerCase()}`,
+                      toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
+                      background: '#0B1220', color: '#e2e8f0',
+                    });
+                  } else {
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Update Failed',
+                      text: res.error || 'Failed to apply bulk assignment',
+                      background: '#0B1220', color: '#e2e8f0',
+                    });
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const confirm = await Swal.fire({
+                    title: 'Are you sure?',
+                    text: `You are about to delete ${selectedIds.length} developer(s).`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'Yes, delete them!',
+                    background: '#0B1220', color: '#e2e8f0',
+                  });
+
+                  if (confirm.isConfirmed) {
+                    setIsBulkActionLoading(true);
+                    let successCount = 0;
+                    for (const id of selectedIds) {
+                      const res = await removeDeveloper(id);
+                      if (res.success) successCount++;
+                    }
+                    setIsBulkActionLoading(false);
+                    setSelectedIds([]);
+                    
+                    Swal.fire({
+                      icon: 'success',
+                      title: 'Deleted!',
+                      text: `Removed ${successCount} developer(s)`,
+                      toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
+                      background: '#0B1220', color: '#e2e8f0',
+                    });
+                  }
+                }}
+                loading={isBulkActionLoading}
+                className="border-danger/20 bg-danger/10 text-danger hover:bg-danger hover:text-white"
+                icon={<HiOutlineTrash className="h-4 w-4" />}
+              >
+                Delete Selected
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -667,8 +673,10 @@ export default function DeveloperList() {
                     <select
                       value={dev.currentStatus}
                       onChange={(e) => handleStatusChange(dev._id, e.target.value)}
+                      disabled={isAnalyst}
                       className={`
-                        text-xs font-medium rounded-full px-2 py-1 outline-none cursor-pointer border
+                        text-xs font-medium rounded-full px-2 py-1 outline-none border
+                        ${isAnalyst ? 'cursor-default' : 'cursor-pointer'}
                         ${dev.currentStatus === 'new' ? 'bg-status-new/10 text-status-new border-status-new/20' : 
                           dev.currentStatus === 'hired' ? 'bg-status-hired/10 text-status-hired border-status-hired/20' : 
                           'bg-surface-hover text-foreground border-border'}
@@ -689,13 +697,15 @@ export default function DeveloperList() {
                       >
                         <HiOutlineExternalLink className="h-4 w-4" />
                       </Link>
-                      <button
-                        onClick={() => handleDelete(dev._id, dev.name)}
-                        className="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground hover:bg-surface hover:text-danger transition-colors border border-transparent hover:border-border"
-                        title="Delete Developer"
-                      >
-                        <HiOutlineTrash className="h-4 w-4" />
-                      </button>
+                      {!isAnalyst && (
+                        <button
+                          onClick={() => handleDelete(dev._id, dev.name)}
+                          className="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground hover:bg-surface hover:text-danger transition-colors border border-transparent hover:border-border"
+                          title="Delete Developer"
+                        >
+                          <HiOutlineTrash className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
