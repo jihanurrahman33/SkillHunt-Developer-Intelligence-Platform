@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme } from '@/providers/ThemeContext';
 import { HiOutlineBell, HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
 
 export default function Header() {
