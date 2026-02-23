@@ -21,6 +21,7 @@ export function createDeveloperDocument(data) {
     source: data.source || 'github',
     sourceUrl: data.sourceUrl || `https://github.com/${data.username}`,
     avatarUrl: data.avatarUrl || null,
+    addedBy: data.addedBy,
 
     // Profile
     bio: data.bio || '',

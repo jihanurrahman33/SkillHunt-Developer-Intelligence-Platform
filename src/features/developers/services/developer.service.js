@@ -2,8 +2,8 @@
 const API_BASE = '/api/developers';
 
 export async function fetchDevelopers(params = {}) {
-  const query = new URLSearchParams(params).toString();
-  const response = await fetch(`${API_BASE}?${query}`);
+  const query = new URLSearchParams({ ...params, _t: Date.now() }).toString();
+  const response = await fetch(`${API_BASE}?${query}`, { cache: 'no-store' });
 
   if (!response.ok) {
     const error = await response.json();
@@ -14,7 +14,7 @@ export async function fetchDevelopers(params = {}) {
 }
 
 export async function fetchDeveloperById(id) {
-  const response = await fetch(`${API_BASE}/${id}`);
+  const response = await fetch(`${API_BASE}/${id}?_t=${Date.now()}`, { cache: 'no-store' });
 
   if (!response.ok) {
     const error = await response.json();
@@ -54,6 +54,24 @@ export async function updateDeveloperStatus(id, status, campaignId = null) {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || 'Failed to update developer status');
+  }
+
+  return response.json();
+}
+
+export async function bulkAssignDevelopersToCampaign(developerIds, campaignId, newStatus = null) {
+  const payload = { developerIds, campaignId };
+  if (newStatus) payload.newStatus = newStatus;
+
+  const response = await fetch(`${API_BASE}/bulk-campaign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || error.message || 'Failed to bulk assign developers');
   }
 
   return response.json();

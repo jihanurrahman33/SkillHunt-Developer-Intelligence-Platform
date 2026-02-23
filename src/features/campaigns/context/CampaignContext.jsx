@@ -33,11 +33,11 @@ export function CampaignProvider({ children }) {
       if (status) queryParams.append('status', status);
 
       const res = await fetch(`${API_BASE}?${queryParams.toString()}`);
-      const data = await res.json();
+      const payload = await res.json();
 
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch campaigns');
+      if (!res.ok) throw new Error(payload.error || 'Failed to fetch campaigns');
       
-      setCampaigns(data.data);
+      setCampaigns(payload);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,12 +56,12 @@ export function CampaignProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(campaignData),
       });
-      const data = await res.json();
+      const payload = await res.json();
       
-      if (!res.ok) throw new Error(data.error || 'Failed to create campaign');
+      if (!res.ok) throw new Error(payload.error || 'Failed to create campaign');
       
-      setCampaigns((prev) => [data.data, ...prev]);
-      return { success: true, data: data.data };
+      setCampaigns((prev) => [payload, ...prev]);
+      return { success: true, campaign: payload };
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -74,14 +74,14 @@ export function CampaignProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
-      const data = await res.json();
+      const payload = await res.json();
       
-      if (!res.ok) throw new Error(data.error || 'Failed to update campaign');
+      if (!res.ok) throw new Error(payload.error || 'Failed to update campaign');
       
       setCampaigns((prev) => 
-        prev.map(c => c._id === id ? data.data : c)
+        prev.map(c => c._id === id ? payload : c)
       );
-      return { success: true, data: data.data };
+      return { success: true, campaign: payload };
     } catch (err) {
       return { success: false, error: err.message };
     }

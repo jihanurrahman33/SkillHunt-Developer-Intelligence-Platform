@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import { useCampaignContext } from '@/features/campaigns/context/CampaignContext';
 import Modal from '@/components/modals/Modal';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
@@ -51,7 +52,13 @@ export default function DeveloperList() {
     importDeveloper,
     changeStatus,
     removeDeveloper,
+    bulkAssignCampaign, // New hook function
   } = useDeveloperContext();
+
+  const { campaigns } = useCampaignContext();
+  const activeCampaignsOptions = (campaigns || [])
+    .filter(c => c.status === 'active')
+    .map(c => ({ value: c._id, label: c.title }));
 
   // Ingest Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -443,6 +450,43 @@ export default function DeveloperList() {
                   toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
                   background: '#0B1220', color: '#e2e8f0',
                 });
+              }}
+            />
+            <Select
+              options={[
+                { value: '', label: 'Assign to Campaign...' },
+                { value: 'clear', label: '— Remove from Campaign —' },
+                ...activeCampaignsOptions
+              ]}
+              value=""
+              onChange={async (e) => {
+                const actionValue = e.target.value;
+                if (!actionValue) return;
+
+                const campaignId = actionValue === 'clear' ? null : actionValue;
+                const actionText = campaignId === null ? 'Removed from campaign' : 'Assigned to campaign';
+
+                setIsBulkActionLoading(true);
+                const res = await bulkAssignCampaign(selectedIds, campaignId);
+                setIsBulkActionLoading(false);
+                setSelectedIds([]);
+
+                if (res.success) {
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'Bulk Update',
+                    text: `Successfully ${actionText.toLowerCase()}`,
+                    toast: true, position: 'bottom-end', timer: 3000, showConfirmButton: false,
+                    background: '#0B1220', color: '#e2e8f0',
+                  });
+                } else {
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'Update Failed',
+                    text: res.error || 'Failed to apply bulk assignment',
+                    background: '#0B1220', color: '#e2e8f0',
+                  });
+                }
               }}
             />
             <Button

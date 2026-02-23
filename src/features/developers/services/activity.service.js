@@ -8,7 +8,7 @@ const API_BASE = '/api/developers';
  * @param {number} limit 
  */
 export async function getDeveloperActivity(developerId, limit = 20) {
-  const response = await fetch(`${API_BASE}/${developerId}/activity?limit=${limit}`);
+  const response = await fetch(`${API_BASE}/${developerId}/activity?limit=${limit}&_t=${Date.now()}`, { cache: 'no-store' });
   const data = await response.json();
   
   if (!response.ok) {
@@ -23,7 +23,7 @@ export async function getDeveloperActivity(developerId, limit = 20) {
  * @param {number} limit 
  */
 export async function getRecentGlobalActivity(limit = 10) {
-  const response = await fetch(`/api/activity/recent?limit=${limit}`);
+  const response = await fetch(`/api/activity/recent?limit=${limit}&_t=${Date.now()}`, { cache: 'no-store' });
   const data = await response.json();
   
   if (!response.ok) {

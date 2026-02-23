@@ -8,7 +8,6 @@ import {
   HiOutlineUsers,
   HiOutlineUserGroup,
   HiOutlineBriefcase,
-  HiOutlineChartBar,
   HiOutlineLogout,
 } from 'react-icons/hi';
 
@@ -16,7 +15,6 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: HiOutlineViewGrid },
   { name: 'Developers', href: '/developers', icon: HiOutlineUsers },
   { name: 'Campaigns', href: '/campaigns', icon: HiOutlineBriefcase },
-  { name: 'Analytics', href: '/analytics', icon: HiOutlineChartBar },
   { name: 'Users', href: '/users', icon: HiOutlineUserGroup, adminOnly: true },
 ];
 

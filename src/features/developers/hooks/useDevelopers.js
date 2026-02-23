@@ -5,9 +5,11 @@ import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { 
-  fetchDevelopers, 
+  fetchDevelopers, // Keep existing import
+  fetchDeveloperById, // Add this import
   ingestDeveloper, 
   updateDeveloperStatus,
+  bulkAssignDevelopersToCampaign, // Add this import
   deleteDeveloper
 } from '@/features/developers/services/developer.service';
 
@@ -110,6 +112,21 @@ export default function useDevelopers() {
     }
   };
 
+  const bulkAssignCampaign = async (developerIds, campaignId) => {
+    try {
+      await bulkAssignDevelopersToCampaign(developerIds, campaignId);
+      // Optimistically update list
+      setDevelopers((prev) => 
+        prev.map((dev) => 
+          developerIds.includes(dev._id) ? { ...dev, campaignId } : dev
+        )
+      );
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
   return {
     // Data
     developers,
@@ -133,5 +150,6 @@ export default function useDevelopers() {
     changeStatus,
     importDeveloper,
     removeDeveloper,
+    bulkAssignCampaign,
   };
 }

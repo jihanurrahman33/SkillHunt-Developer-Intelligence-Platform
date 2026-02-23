@@ -55,8 +55,6 @@ export async function getRecentGlobalActivity(userId, limit = 10) {
   const db = await connectToDatabase();
   
   const pipeline = [
-    { $sort: { createdAt: -1 } },
-    { $limit: limit },
     {
       $lookup: {
         from: 'developers',
@@ -65,8 +63,10 @@ export async function getRecentGlobalActivity(userId, limit = 10) {
         as: 'developer'
       }
     },
-    { $unwind: '$developer' }, // Assuming the developer must exist
-    { $match: { 'developer.addedBy': userId } }
+    { $unwind: '$developer' },
+    { $match: { 'developer.addedBy': userId } },
+    { $sort: { createdAt: -1 } },
+    { $limit: limit }
   ];
 
   const logs = await db.collection(COLLECTION).aggregate(pipeline).toArray();

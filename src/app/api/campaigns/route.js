@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/api-guard';
+import { verifyAuth, apiSuccess, apiError } from '@/lib/api-guard';
 import { getCampaigns, createCampaign } from '@/lib/repositories/campaign.repository';
-
-// Helper for standardized responses
-const apiSuccess = (data, status = 200) => NextResponse.json({ success: true, data }, { status });
-const apiError = (message, status = 500) => NextResponse.json({ success: false, error: message }, { status });
 
 export async function GET(request) {
   const auth = await verifyAuth(request, ['admin', 'recruiter']);

@@ -2,7 +2,7 @@
 const API_BASE = '/api/campaigns';
 
 export async function fetchCampaigns() {
-  const response = await fetch(API_BASE);
+  const response = await fetch(`${API_BASE}?_t=${Date.now()}`, { cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error('Failed to fetch campaigns');
@@ -12,7 +12,7 @@ export async function fetchCampaigns() {
 }
 
 export async function fetchCampaignById(id) {
-  const response = await fetch(`${API_BASE}/${id}`);
+  const response = await fetch(`${API_BASE}/${id}?_t=${Date.now()}`, { cache: 'no-store' });
 
   if (!response.ok) {
     if (response.status === 404) {

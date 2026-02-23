@@ -7,6 +7,7 @@ import connectToDatabase from '@/lib/db';
 const COLLECTION = 'developers';
 
 export async function findDevelopers({
+  userId,
   search = '',
   techStack = '',
   location = '',
@@ -18,6 +19,9 @@ export async function findDevelopers({
 } = {}) {
   const db = await connectToDatabase();
   const query = {};
+
+  // Enforce Multi-Tenant Data Isolation
+  if (userId) query.addedBy = userId;
 
   // Text search across name, bio, location
   if (search) {
@@ -87,9 +91,9 @@ export async function insertDeveloper(doc) {
   // Extract createdAt and currentStatus so they only apply on insert, not update
   const { createdAt, currentStatus, ...updateDoc } = doc;
 
-  // Upsert based on profileHash for idempotent ingestion
+  // Upsert based on profileHash and addedBy for per-recruiter idempotent ingestion
   const result = await db.collection(COLLECTION).updateOne(
-    { profileHash: doc.profileHash },
+    { profileHash: doc.profileHash, addedBy: doc.addedBy },
     {
       $set: {
         ...updateDoc,
@@ -130,6 +134,38 @@ export async function updateDeveloper(id, updates) {
 
 export async function updateDeveloperStatus(id, status) {
   return updateDeveloper(id, { currentStatus: status });
+}
+
+export async function bulkUpdateCampaignAssignments(developerIds, campaignId, userId, newStatus = null) {
+  const db = await connectToDatabase();
+  
+  if (!Array.isArray(developerIds) || developerIds.length === 0) return 0;
+  
+  const objectIds = developerIds.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+  if (objectIds.length === 0) return 0;
+
+  const updateDoc = {
+    $set: {
+      campaignId: campaignId,
+      updatedAt: new Date(),
+    }
+  };
+
+  // Optionally bulk-update their status at the same time (e.g. move to 'contacted')
+  if (newStatus) {
+    updateDoc.$set.currentStatus = newStatus;
+  }
+
+  // Ensure we only update developers owned by this specific recruiter
+  const result = await db.collection(COLLECTION).updateMany(
+    { 
+      _id: { $in: objectIds },
+      addedBy: userId 
+    },
+    updateDoc
+  );
+
+  return result.modifiedCount;
 }
 
 export async function getDeveloperStats() {
