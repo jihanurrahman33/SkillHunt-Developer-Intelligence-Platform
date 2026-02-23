@@ -56,7 +56,7 @@ export default function DeveloperList() {
     bulkAssignCampaign, // New hook function
   } = useDeveloperContext();
 
-  const { isAnalyst } = useAuth();
+  const { user, isAdmin, isAnalyst } = useAuth();
   const { campaigns } = useCampaignContext();
   const activeCampaignsOptions = (campaigns || [])
     .filter(c => c.status === 'active')
@@ -627,11 +627,15 @@ export default function DeveloperList() {
                   <select
                     value={dev.currentStatus}
                     onChange={(e) => handleStatusChange(dev._id, e.target.value)}
-                    disabled={isAnalyst}
-                    className="w-full text-xs font-bold bg-surface-hover border border-border rounded-lg px-2 py-1.5 focus:outline-none"
+                    disabled={isAnalyst || (dev.ownerId && dev.ownerId !== user?.id && !isAdmin)}
+                    className={`w-full text-xs font-bold bg-surface-hover border border-border rounded-lg px-2 py-1.5 focus:outline-none 
+                      ${(dev.ownerId && dev.ownerId !== user?.id && !isAdmin) ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
                     {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                   </select>
+                  {dev.ownerId && dev.ownerId !== user?.id && !isAdmin && (
+                    <p className="text-[9px] text-danger mt-1 italic">Locked by {dev.ownerName}</p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Location</p>
@@ -819,19 +823,23 @@ export default function DeveloperList() {
                     <select
                       value={dev.currentStatus}
                       onChange={(e) => handleStatusChange(dev._id, e.target.value)}
-                      disabled={isAnalyst}
+                      disabled={isAnalyst || (dev.ownerId && dev.ownerId !== user?.id && !isAdmin)}
                       className={`
                         text-xs font-medium rounded-full px-2 py-1 outline-none border
-                        ${isAnalyst ? 'cursor-default' : 'cursor-pointer'}
+                        ${isAnalyst || (dev.ownerId && dev.ownerId !== user?.id && !isAdmin) ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
                         ${dev.currentStatus === 'new' ? 'bg-status-new/10 text-status-new border-status-new/20' : 
                           dev.currentStatus === 'hired' ? 'bg-status-hired/10 text-status-hired border-status-hired/20' : 
                           'bg-surface-hover text-foreground border-border'}
                       `}
+                      title={dev.ownerId && dev.ownerId !== user?.id && !isAdmin ? `Currently handled by ${dev.ownerName}` : ''}
                     >
                       {STATUS_OPTIONS.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
+                    {dev.ownerId && dev.ownerId !== user?.id && !isAdmin && (
+                      <span className="block text-[10px] text-danger font-medium mt-1">Locked: {dev.ownerName}</span>
+                    )}
                   </td>
 
                   <td className="px-4 py-3 text-right">

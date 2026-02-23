@@ -243,6 +243,11 @@ export default function DeveloperProfile({ id }) {
               <option key={opt.value} value={opt.value} className="bg-surface text-foreground">{opt.label}</option>
             ))}
           </select>
+          {developer.ownerId && developer.ownerId !== user?.id && !isAdmin && (
+            <div className="text-[10px] font-bold text-danger uppercase px-2 py-1 bg-danger/5 border border-danger/10 rounded">
+              Locked to {developer.ownerName}
+            </div>
+          )}
           <Button 
             variant="outline" 
             onClick={() => window.open(developer.sourceUrl, '_blank')}
@@ -589,13 +594,20 @@ export default function DeveloperProfile({ id }) {
                 </Badge>
               </div>
 
+              {developer.ownerName && (
+                <div className="flex items-center justify-between text-xs pt-2">
+                  <span className="text-muted-foreground">Recruitment Owner</span>
+                  <span className="font-bold text-foreground">{developer.ownerName}</span>
+                </div>
+              )}
+
               {/* Campaign Assignment */}
               <div className="pt-4 border-t border-border">
                 <label className="block text-xs font-medium text-muted-foreground mb-2">Assign to Campaign</label>
                 <select
                   value={developer.campaignId || ''}
                   onChange={(e) => handleStatusChange(developer.currentStatus, e.target.value || null)}
-                  disabled={isUpdating}
+                  disabled={isUpdating || (developer.ownerId && developer.ownerId !== user?.id && !isAdmin)}
                   className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                 >
                   <option value="">-- No Campaign --</option>

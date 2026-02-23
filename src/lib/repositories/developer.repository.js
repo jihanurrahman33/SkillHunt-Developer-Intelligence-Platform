@@ -20,9 +20,9 @@ export async function findDevelopers({
   const db = await connectToDatabase();
   const query = {};
 
-  // Enforce Multi-Tenant Data Isolation
-  if (userId) query.addedBy = userId;
-
+  // Global Registry: Data is shared across all recruiters
+  // Ownership is handled via status-based locks, not list-level partitioning
+  
   // Text search across name, bio, location
   if (search) {
     query.$or = [
@@ -91,9 +91,9 @@ export async function insertDeveloper(doc) {
   // Extract createdAt and currentStatus so they only apply on insert, not update
   const { createdAt, currentStatus, ...updateDoc } = doc;
 
-  // Upsert based on profileHash and addedBy for per-recruiter idempotent ingestion
+  // Upsert based on profileHash for universal idempotent ingestion
   const result = await db.collection(COLLECTION).updateOne(
-    { profileHash: doc.profileHash, addedBy: doc.addedBy },
+    { profileHash: doc.profileHash },
     {
       $set: {
         ...updateDoc,
@@ -156,11 +156,10 @@ export async function bulkUpdateCampaignAssignments(developerIds, campaignId, us
     updateDoc.$set.currentStatus = newStatus;
   }
 
-  // Ensure we only update developers owned by this specific recruiter
+  // Global update for any developer in the registry
   const result = await db.collection(COLLECTION).updateMany(
     { 
-      _id: { $in: objectIds },
-      addedBy: userId 
+      _id: { $in: objectIds }
     },
     updateDoc
   );
@@ -170,8 +169,10 @@ export async function bulkUpdateCampaignAssignments(developerIds, campaignId, us
 
 export async function getDeveloperStats() {
   const db = await connectToDatabase();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const [total, statusCounts, topLanguages] = await Promise.all([
+  const [total, statusCounts, topLanguages, historicalStats] = await Promise.all([
     db.collection(COLLECTION).countDocuments(),
 
     db.collection(COLLECTION).aggregate([
@@ -184,12 +185,24 @@ export async function getDeveloperStats() {
       { $sort: { count: -1 } },
       { $limit: 10 },
     ]).toArray(),
+
+    // Historical throughput for the last 30 days (Requirement 12)
+    db.collection('activityLogs').aggregate([
+      { 
+        $match: { 
+          type: 'status_change',
+          createdAt: { $gte: thirtyDaysAgo }
+        } 
+      },
+      { $group: { _id: '$details.newStatus', count: { $sum: 1 } } },
+    ]).toArray(),
   ]);
 
   return {
     total,
     byStatus: Object.fromEntries(statusCounts.map((s) => [s._id, s.count])),
     topLanguages: topLanguages.map((l) => ({ name: l._id, count: l.count })),
+    throughput: Object.fromEntries(historicalStats.map((s) => [s._id, s.count])),
   };
 }
 

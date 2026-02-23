@@ -41,6 +41,7 @@ export async function POST(request) {
             campaignId: campaignId || 'unassigned',
             newStatus: newStatus || undefined,
             changedBy: auth.user.name,
+            ownerId: auth.user.id,
             context: 'bulk_operation'
           }
         })
