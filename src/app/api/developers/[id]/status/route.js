@@ -32,6 +32,19 @@ export async function PATCH(request, { params }) {
 
     // Log status change activity for Requirement 5 (Status History)
     if (oldDev && oldDev.currentStatus !== currentStatus) {
+      const contactStatuses = ['contacted', 'interviewing', 'placed'];
+      
+      // Update lastContact metadata if moving to an active contact status
+      if (contactStatuses.includes(currentStatus)) {
+        await updateDeveloper(id, {
+          lastContact: {
+            contactedAt: new Date(),
+            recruiterName: auth.user.name,
+            status: currentStatus
+          }
+        });
+      }
+
       await logActivity({
         developerId: id,
         type: 'status_change',

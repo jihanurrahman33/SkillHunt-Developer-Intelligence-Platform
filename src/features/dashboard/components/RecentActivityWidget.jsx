@@ -121,7 +121,16 @@ export default function RecentActivityWidget({ limit = 5 }) {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                    {formatActivityType(activity.type)} <span className="opacity-70">— Intelligence alert</span>
+                    {activity.type === 'status_change' ? (
+                      <>
+                        Moved to <span className="font-bold text-foreground">{(activity.details?.newStatus || activity.details?.status || 'unknown').charAt(0).toUpperCase() + (activity.details?.newStatus || activity.details?.status || 'unknown').slice(1)}</span>
+                        {activity.details?.changedBy && ` by ${activity.details.changedBy}`}
+                      </>
+                    ) : (
+                      <>
+                        {formatActivityType(activity.type)} <span className="opacity-70">— Intelligence alert</span>
+                      </>
+                    )}
                   </p>
                 </div>
               </div>

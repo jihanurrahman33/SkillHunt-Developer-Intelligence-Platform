@@ -5,7 +5,8 @@ import {
   HiOutlineCode, 
   HiOutlineLightningBolt, 
   HiOutlineInformationCircle,
-  HiOutlineRefresh
+  HiOutlineRefresh,
+  HiOutlineBriefcase
 } from 'react-icons/hi';
 import ErrorDisplay from '@/components/ui/ErrorDisplay';
 
@@ -14,6 +15,7 @@ const ACTIVITY_ICONS = {
   activity_spike: <HiOutlineLightningBolt className="h-5 w-5 text-warning" />,
   skills_updated: <HiOutlineInformationCircle className="h-5 w-5 text-info" />,
   status_change: <HiOutlineRefresh className="h-5 w-5 text-primary" />,
+  campaign_assignment: <HiOutlineBriefcase className="h-5 w-5 text-secondary" />,
 };
 
 const formatActivityDetails = (type, details) => {
@@ -25,7 +27,14 @@ const formatActivityDetails = (type, details) => {
     case 'skills_updated':
       return `Tech stack was updated.`;
     case 'status_change':
-      return `Recruitment status moved to "${details.status}".`;
+      const rawStatus = details.newStatus || details.status || 'unknown';
+      const statusLabel = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+      const userStr = details.changedBy ? ` by ${details.changedBy}` : '';
+      return `Recruitment status moved to "${statusLabel}"${userStr}.`;
+    case 'campaign_assignment':
+      const campaignStr = details.campaignId === 'unassigned' ? 'unassigned' : 'assigned to a campaign';
+      const byStr = details.changedBy ? ` by ${details.changedBy}` : '';
+      return `Developer was ${campaignStr}${byStr}.`;
     default:
       return 'Profile was updated.';
   }
