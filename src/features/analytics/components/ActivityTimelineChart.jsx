@@ -30,9 +30,9 @@ export default function ActivityTimelineChart({ data = [] }) {
 
   return (
     <Card title="Developer Network Activity" subtitle="Timeline of detected spikes & changes (30 days)" className="h-[400px] flex flex-col">
-      <div className="w-full h-[300px] pr-4 mt-6">
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={paddedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+      <div className="w-full h-[320px] pr-4 mt-2">
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={paddedData} margin={{ top: 10, right: 10, left: -20, bottom: 30 }}>
             <defs>
               <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -49,7 +49,7 @@ export default function ActivityTimelineChart({ data = [] }) {
               minTickGap={30}
               tickFormatter={(val) => {
                 const d = new Date(val);
-                return `${d.getMonth() + 1}/${d.getDate()}`;
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               }}
             />
             <YAxis 
