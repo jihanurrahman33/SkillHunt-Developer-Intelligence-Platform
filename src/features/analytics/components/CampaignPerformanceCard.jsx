@@ -30,7 +30,7 @@ export default function CampaignPerformanceCard({ campaigns = [] }) {
           const total = campaign.developerCount || 0;
           
           // Metrics that matter to recruiters
-          const inProgress = (stats.screening || 0) + (stats.interviewing || 0) + (stats.offered || 0);
+          const inProgress = (stats.contacted || 0) + (stats.interviewing || 0);
           const hired = stats.hired || 0;
           const placementRate = total > 0 ? ((hired / total) * 100).toFixed(0) : 0;
             
@@ -76,7 +76,7 @@ export default function CampaignPerformanceCard({ campaigns = [] }) {
                 <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter">
                   <div className="flex gap-3">
                     <span className="flex items-center gap-1 text-primary">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Screening ({stats.screening || 0})
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Contacted ({stats.contacted || 0})
                     </span>
                     <span className="flex items-center gap-1 text-info">
                       <span className="h-1.5 w-1.5 rounded-full bg-info" /> Interview ({stats.interviewing || 0})
@@ -90,7 +90,7 @@ export default function CampaignPerformanceCard({ campaigns = [] }) {
                 <div className="h-2.5 w-full bg-muted/20 rounded-full overflow-hidden flex gap-0.5 p-0.5 border border-border/50">
                   <div 
                     className="h-full bg-primary rounded-l-full transition-all duration-1000" 
-                    style={{ width: `${(stats.screening / (total || 1)) * 100}%` }} 
+                    style={{ width: `${(stats.contacted / (total || 1)) * 100}%` }} 
                   />
                   <div 
                     className="h-full bg-info transition-all duration-1000" 
@@ -98,7 +98,7 @@ export default function CampaignPerformanceCard({ campaigns = [] }) {
                   />
                   <div 
                     className="h-full bg-warning transition-all duration-1000" 
-                    style={{ width: `${(stats.offered / (total || 1)) * 100}%` }} 
+                    style={{ width: `${(stats.rejected / (total || 1)) * 100}%` }} 
                   />
                   <div 
                     className="h-full bg-success rounded-r-full transition-all duration-1000" 

@@ -8,8 +8,10 @@ export async function GET(request) {
 
   try {
     const { searchParams } = new URL(request.url);
+    const showOwnOnly = searchParams.get('own') === 'true';
+    
     const filters = {
-      userId: auth.user.id,
+      userId: showOwnOnly ? auth.user.id : undefined,
       status: searchParams.get('status') || undefined,
       search: searchParams.get('search') || undefined,
     };
