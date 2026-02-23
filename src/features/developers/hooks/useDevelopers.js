@@ -1,24 +1,20 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-
+import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { 
-  fetchDevelopers, // Keep existing import
-  fetchDeveloperById, // Add this import
+  fetchDevelopers,
+  fetchDeveloperById,
   ingestDeveloper, 
   updateDeveloperStatus,
-  bulkAssignDevelopersToCampaign, // Add this import
+  bulkAssignDevelopersToCampaign,
   deleteDeveloper
 } from '@/features/developers/services/developer.service';
 
 export default function useDevelopers() {
   const { user } = useAuth();
-  const [developers, setDevelopers] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   
   const searchParams = useSearchParams();
   
@@ -34,57 +30,55 @@ export default function useDevelopers() {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
 
-  const loadDevelopers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = {
-        page,
-        limit,
-        sortBy,
-        sortOrder,
-        ...(search && { search }),
-        ...(techStack && { techStack }),
-        ...(location && { location }),
-        ...(status && { status }),
-      };
-
-      const data = await fetchDevelopers(params);
-      setDevelopers(data.developers || []);
-      setPagination(data.pagination || null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, sortBy, sortOrder, search, techStack, location, status]);
-
-  useEffect(() => {
-    if (user?.id) {
-      loadDevelopers();
-    }
-  }, [loadDevelopers, user?.id]);
-
   // Sync state if URL changes
   useEffect(() => {
     const query = searchParams.get('search');
     if (query !== null && query !== search) {
       setSearch(query);
     }
-  }, [searchParams]);
+  }, [searchParams, search]);
+
+  const params = {
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    ...(search && { search }),
+    ...(techStack && { techStack }),
+    ...(location && { location }),
+    ...(status && { status }),
+  };
+
+  const queryString = new URLSearchParams(params).toString();
+
+  const { data, error, mutate, isLoading } = useSWR(
+    user?.id ? `/api/developers?${queryString}` : null,
+    () => fetchDevelopers(params),
+    {
+      keepPreviousData: true,
+    }
+  );
+
+  const developers = data?.developers || [];
+  const pagination = data?.pagination || null;
 
   const changeStatus = async (id, newStatus) => {
     try {
-      await updateDeveloperStatus(id, newStatus);
-      // Optimistic update
-      setDevelopers((prev) =>
-        prev.map((dev) =>
-          dev._id === id ? { ...dev, currentStatus: newStatus } : dev
-        )
+      // Optimistically update the UI
+      mutate(
+        {
+          developers: developers.map((dev) =>
+            dev._id === id ? { ...dev, currentStatus: newStatus } : dev
+          ),
+          pagination,
+        },
+        false
       );
+      await updateDeveloperStatus(id, newStatus);
+      mutate(); // Revalidate
       return { success: true };
     } catch (err) {
+      mutate(); // Revert on failure
       return { success: false, error: err.message };
     }
   };
@@ -92,9 +86,8 @@ export default function useDevelopers() {
   const importDeveloper = async (username) => {
     try {
       const result = await ingestDeveloper(username);
-      // Reload the first page to show the new developer
       setPage(1);
-      loadDevelopers();
+      mutate(); // Revalidate data
       return { success: true, data: result };
     } catch (err) {
       return { success: false, error: err.message };
@@ -103,26 +96,40 @@ export default function useDevelopers() {
 
   const removeDeveloper = async (id) => {
     try {
-      await deleteDeveloper(id);
       // Optimistically remove from list
-      setDevelopers((prev) => prev.filter((dev) => dev._id !== id));
+      mutate(
+        {
+          developers: developers.filter((dev) => dev._id !== id),
+          pagination,
+        },
+        false
+      );
+      await deleteDeveloper(id);
+      mutate(); // Revalidate
       return { success: true };
     } catch (err) {
+      mutate(); // Revert
       return { success: false, error: err.message };
     }
   };
 
   const bulkAssignCampaign = async (developerIds, campaignId) => {
     try {
-      await bulkAssignDevelopersToCampaign(developerIds, campaignId);
       // Optimistically update list
-      setDevelopers((prev) => 
-        prev.map((dev) => 
-          developerIds.includes(dev._id) ? { ...dev, campaignId } : dev
-        )
+      mutate(
+        {
+          developers: developers.map((dev) => 
+            developerIds.includes(dev._id) ? { ...dev, campaignId } : dev
+          ),
+          pagination,
+        },
+        false
       );
+      await bulkAssignDevelopersToCampaign(developerIds, campaignId);
+      mutate(); // Revalidate
       return { success: true };
     } catch (err) {
+      mutate(); // Revert
       return { success: false, error: err.message };
     }
   };
@@ -131,8 +138,8 @@ export default function useDevelopers() {
     // Data
     developers,
     pagination,
-    loading,
-    error,
+    loading: isLoading,
+    error: error?.message,
     
     // Filter State
     search, setSearch,
@@ -146,7 +153,7 @@ export default function useDevelopers() {
     page, setPage,
     
     // Actions
-    reload: loadDevelopers,
+    reload: () => mutate(),
     changeStatus,
     importDeveloper,
     removeDeveloper,

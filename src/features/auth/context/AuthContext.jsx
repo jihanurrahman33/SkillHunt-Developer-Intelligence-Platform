@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
 
   const user = session?.user || null;
   const loading = status === 'loading';
@@ -14,6 +14,8 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     loading,
+    update,
+
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     isRecruiter: user?.role === 'recruiter',

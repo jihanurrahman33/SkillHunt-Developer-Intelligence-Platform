@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { requestRecruiterAccess } from '@/features/users/services/users.service';
 import Button from '@/components/ui/Button';
@@ -14,10 +15,32 @@ import {
 } from 'react-icons/hi';
 import Swal from 'sweetalert2';
 
+const fetcher = url => fetch(url).then(r => r.json());
+
 export default function OnboardingGuard({ children }) {
-  const { user, isAdmin, isRecruiter, loading: authLoading } = useAuth();
+  const { user, isAdmin, isRecruiter, loading: authLoading, update, isAuthenticated } = useAuth();
   const [requesting, setRequesting] = useState(false);
   const [localStatus, setLocalStatus] = useState(null); // Used for optimistic UI update
+
+  // Determine current status (prioritize local state for immediate feedback)
+  const currentStatus = localStatus || user?.onboardingStatus || 'none';
+  const isPolling = isAuthenticated && (currentStatus === 'pending' || currentStatus === 'rejected');
+
+  // Background polling for approval
+  const { data: statusData } = useSWR(
+    isPolling ? `/api/users/me/status` : null,
+    fetcher,
+    { refreshInterval: 5000 } // Poll every 5 seconds
+  );
+
+  useEffect(() => {
+    // If the polled status indicates they are now a recruiter or approved, update session
+    if (statusData?.onboardingStatus === 'approved' || statusData?.role === 'recruiter' || statusData?.role === 'admin') {
+      if (!isAdmin && !isRecruiter) {
+        update(); // Triggers NextAuth to re-fetch the token and re-hydrate `useAuth`
+      }
+    }
+  }, [statusData, update, isAdmin, isRecruiter]);
 
   if (authLoading) return null;
 
@@ -25,9 +48,6 @@ export default function OnboardingGuard({ children }) {
   if (isAdmin || isRecruiter) {
     return children;
   }
-
-  // Determine current status
-  const currentStatus = localStatus || user?.onboardingStatus || 'none';
 
   const handleRequest = async () => {
     setRequesting(true);

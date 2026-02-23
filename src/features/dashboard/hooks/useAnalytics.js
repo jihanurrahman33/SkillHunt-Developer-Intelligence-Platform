@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+'use client';
+
+import useSWR from 'swr';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { fetchAnalyticsData } from '../services/analytics.service';
 import Swal from 'sweetalert2';
@@ -6,48 +8,28 @@ import Swal from 'sweetalert2';
 export function useAnalytics() {
   const { isAuthenticated, user } = useAuth();
   
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const loadAnalytics = async () => {
-    if (!isAuthenticated || !user?.id) {
-      setData(null);
-      return;
+  const { data, error, mutate, isLoading } = useSWR(
+    isAuthenticated && user?.id ? `/api/analytics` : null,
+    fetchAnalyticsData,
+    {
+      refreshInterval: 300000, // Auto-refresh every 5 minutes
+      keepPreviousData: true,
+      revalidateOnFocus: true,
+      onError: (err) => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Dashboard Error',
+          text: err.message,
+          toast: true,
+          position: 'bottom-end',
+          showConfirmButton: false,
+          timer: 3000,
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      }
     }
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const result = await fetchAnalyticsData();
-      setData(result);
-    } catch (err) {
-      setError(err.message);
-      Swal.fire({
-        icon: 'error',
-        title: 'Dashboard Error',
-        text: err.message,
-        toast: true,
-        position: 'bottom-end',
-        showConfirmButton: false,
-        timer: 3000,
-        background: '#0B1220',
-        color: '#e2e8f0',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  );
 
-  useEffect(() => {
-    loadAnalytics();
-    
-    // Auto-refresh every 5 minutes (300000ms) to ensure live feel
-    const intervalId = setInterval(loadAnalytics, 300000);
-    
-    return () => clearInterval(intervalId);
-  }, [user?.id, isAuthenticated]);
-
-  return { data, loading, error, refresh: loadAnalytics };
+  return { data, loading: isLoading, error: error?.message, refresh: () => mutate() };
 }
