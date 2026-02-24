@@ -46,3 +46,16 @@ export async function requestRecruiterAccess() {
 export async function updateUserRole(userId, role) {
   return updateUser(userId, { role });
 }
+
+export async function deleteUser(userId) {
+  const response = await fetch(`${API_BASE}?userId=${userId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.message || 'Failed to delete user');
+  }
+
+  return response.json();
+}

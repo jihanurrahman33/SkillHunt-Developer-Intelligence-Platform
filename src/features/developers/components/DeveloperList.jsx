@@ -606,7 +606,7 @@ export default function DeveloperList() {
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black
-                    ${dev.activityScore >= 80 ? 'bg-success/20 text-success' : dev.activityScore >= 50 ? 'bg-warning/20 text-warning' : 'bg-muted text-muted-foreground'}`}>
+                    ${dev.activityScore >= 80 ? 'bg-success/20 text-success' : dev.activityScore >= 50 ? 'bg-warning/20 text-warning' : 'bg-danger/15 text-danger'}`}>
                     {dev.activityScore}
                   </div>
                   <Badge 
@@ -800,7 +800,7 @@ export default function DeveloperList() {
                         inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold
                         ${dev.activityScore >= 80 ? 'bg-success/15 text-success' : 
                           dev.activityScore >= 50 ? 'bg-warning/15 text-warning' : 
-                          'bg-muted text-muted-foreground'}
+                          'bg-danger/15 text-danger'}
                       `}>
                         {dev.activityScore}
                       </div>

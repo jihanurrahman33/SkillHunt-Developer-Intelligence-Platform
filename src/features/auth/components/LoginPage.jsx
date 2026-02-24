@@ -67,6 +67,42 @@ function LoginContent() {
     }
   };
 
+  const handleDemoAdminLogin = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signIn('credentials', {
+        email: 'nishak.admin@skillhunt.com',
+        password: '123456',
+        redirect: false,
+      });
+
+      if (result?.error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Demo Login Failed',
+          text: result.error,
+          background: '#0B1220',
+          color: '#e2e8f0',
+          confirmButtonColor: '#2563EB',
+        });
+      } else {
+        router.push(callbackUrl);
+        router.refresh();
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Something went wrong. Please try again.',
+        background: '#0B1220',
+        color: '#e2e8f0',
+        confirmButtonColor: '#2563EB',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
@@ -79,6 +115,23 @@ function LoginContent() {
           <p className="mt-1 text-sm text-muted-foreground">
             Sign in to SkillHunt IntelliTrack
           </p>
+        </div>
+
+        {/* Demo Admin Login Button */}
+        <div className="mb-4">
+          <button
+            onClick={handleDemoAdminLogin}
+            disabled={isLoading || !!socialLoading}
+            type="button"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-primary bg-primary/10 text-sm font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            ) : (
+              <HiOutlineLockClosed className="h-4 w-4" />
+            )}
+            Demo Admin Login
+          </button>
         </div>
 
         {/* Social Login Buttons */}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import useUsers from '@/features/users/hooks/useUsers';
 import Badge from '@/components/ui/Badge';
 import Swal from 'sweetalert2';
-import { HiOutlineSearch, HiOutlineShieldCheck, HiOutlineUser } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineShieldCheck, HiOutlineUser, HiOutlineTrash } from 'react-icons/hi';
 
 export default function UserManagement() {
   const {
@@ -21,6 +21,9 @@ export default function UserManagement() {
     changeRole,
     approveUser,
     rejectUser,
+    blockUser,
+    unblockUser,
+    removeUser,
   } = useUsers();
 
   const [onboardingFilter, setOnboardingFilter] = useState('');
@@ -57,6 +60,123 @@ export default function UserManagement() {
         Swal.fire({
           icon: 'error',
           title: 'Failed',
+          text: res.error,
+          background: '#0B1220',
+          color: '#e2e8f0',
+          confirmButtonColor: '#2563EB',
+        });
+      }
+    }
+  };
+
+  const handleBlockUser = async (userId, userName) => {
+    const result = await Swal.fire({
+      title: 'Block Recruiter?',
+      html: `Are you sure you want to block <strong>${userName}</strong>? This will immediately revoke their access to the system.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, block them',
+      cancelButtonText: 'Cancel',
+      background: '#0B1220',
+      color: '#e2e8f0',
+      confirmButtonColor: '#ef4444',
+    });
+
+    if (result.isConfirmed) {
+      const res = await blockUser(userId);
+
+      if (res.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'User Blocked',
+          text: `${userName}'s access has been revoked.`,
+          timer: 2000,
+          showConfirmButton: false,
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to Block',
+          text: res.error,
+          background: '#0B1220',
+          color: '#e2e8f0',
+          confirmButtonColor: '#2563EB',
+        });
+      }
+    }
+  };
+
+  const handleUnblockUser = async (userId, userName) => {
+    const result = await Swal.fire({
+      title: 'Unblock User?',
+      html: `Restore <strong>${userName}</strong>'s recruiter access?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, unblock',
+      cancelButtonText: 'Cancel',
+      background: '#0B1220',
+      color: '#e2e8f0',
+      confirmButtonColor: '#22c55e',
+    });
+
+    if (result.isConfirmed) {
+      const res = await unblockUser(userId);
+
+      if (res.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'User Unblocked',
+          text: `${userName} has been restored as a Recruiter.`,
+          timer: 2000,
+          showConfirmButton: false,
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to Unblock',
+          text: res.error,
+          background: '#0B1220',
+          color: '#e2e8f0',
+          confirmButtonColor: '#2563EB',
+        });
+      }
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    const result = await Swal.fire({
+      title: 'Permanently Delete User?',
+      html: `This will <strong>permanently</strong> remove <strong>${userName}</strong> from the system. This action <strong>cannot be undone</strong>.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete permanently',
+      cancelButtonText: 'Cancel',
+      background: '#0B1220',
+      color: '#e2e8f0',
+      confirmButtonColor: '#ef4444',
+    });
+
+    if (result.isConfirmed) {
+      const res = await removeUser(userId);
+
+      if (res.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'User Deleted',
+          text: `${userName} has been permanently removed.`,
+          timer: 2000,
+          showConfirmButton: false,
+          background: '#0B1220',
+          color: '#e2e8f0',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to Delete',
           text: res.error,
           background: '#0B1220',
           color: '#e2e8f0',
@@ -210,13 +330,38 @@ export default function UserManagement() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => handleRoleChange(user._id, user.name, user.role)}
-                    className="w-full rounded-lg border border-primary/20 bg-primary/5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
-                  >
-                    {user.role === 'admin' ? 'Demote to Recruiter' : 'Promote to Admin'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleRoleChange(user._id, user.name, user.role)}
+                      className="flex-1 rounded-lg border border-primary/20 bg-primary/5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
+                    >
+                      {user.role === 'admin' ? 'Demote to Recruiter' : 'Promote to Admin'}
+                    </button>
+                    {user.role === 'recruiter' && (
+                      <button
+                        onClick={() => handleBlockUser(user._id, user.name)}
+                        className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-2 text-xs font-bold text-danger transition-colors hover:bg-danger hover:text-white"
+                      >
+                        Block
+                      </button>
+                    )}
+                    {user.role === 'viewer' && user.onboardingStatus === 'rejected' && (
+                      <button
+                        onClick={() => handleUnblockUser(user._id, user.name)}
+                        className="rounded-lg border border-success/20 bg-success/5 px-4 py-2 text-xs font-bold text-success transition-colors hover:bg-success hover:text-white"
+                      >
+                        Unblock
+                      </button>
+                    )}
+                  </div>
                 )}
+                <button
+                  onClick={() => handleDeleteUser(user._id, user.name)}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-danger/10 bg-danger/5 py-2 text-xs font-bold text-danger transition-colors hover:bg-danger hover:text-white"
+                >
+                  <HiOutlineTrash className="h-3.5 w-3.5" />
+                  Delete User
+                </button>
               </div>
             </div>
           ))
@@ -355,13 +500,45 @@ export default function UserManagement() {
                           </button>
                         </>
                       ) : (
-                        <button
-                          onClick={() => handleRoleChange(user._id, user.name, user.role)}
-                          className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
-                        >
-                          {user.role === 'admin' ? 'Make Recruiter' : 'Make Admin'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleRoleChange(user._id, user.name, user.role)}
+                            className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
+                          >
+                            {user.role === 'admin' ? 'Make Recruiter' : 'Make Admin'}
+                          </button>
+                          {user.role === 'recruiter' && (
+                            <>
+                              <span className="text-border">|</span>
+                              <button
+                                onClick={() => handleBlockUser(user._id, user.name)}
+                                className="text-xs font-bold text-danger hover:text-danger/80 transition-colors"
+                              >
+                                Block
+                              </button>
+                            </>
+                          )}
+                          {user.role === 'viewer' && user.onboardingStatus === 'rejected' && (
+                            <>
+                              <span className="text-border">|</span>
+                              <button
+                                onClick={() => handleUnblockUser(user._id, user.name)}
+                                className="text-xs font-bold text-success hover:text-success/80 transition-colors"
+                              >
+                                Unblock
+                              </button>
+                            </>
+                          )}
+                        </div>
                       )}
+                      <span className="text-border">|</span>
+                      <button
+                        onClick={() => handleDeleteUser(user._id, user.name)}
+                        className="text-xs font-bold text-danger/60 hover:text-danger transition-colors"
+                        title="Delete User Permanently"
+                      >
+                        <HiOutlineTrash className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </td>
                 </tr>

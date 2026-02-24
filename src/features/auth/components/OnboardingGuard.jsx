@@ -24,21 +24,29 @@ export default function OnboardingGuard({ children }) {
 
   // Determine current status (prioritize local state for immediate feedback)
   const currentStatus = localStatus || user?.onboardingStatus || 'none';
-  const isPolling = isAuthenticated && (currentStatus === 'pending' || currentStatus === 'rejected');
-
-  // Background polling for approval
+  // Background polling — always poll for authenticated users to detect both promotions AND demotions (blocks)
   const { data: statusData } = useSWR(
-    isPolling ? `/api/users/me/status` : null,
+    isAuthenticated ? `/api/users/me/status` : null,
     fetcher,
-    { refreshInterval: 5000 } // Poll every 5 seconds
+    { refreshInterval: 5000 }
   );
 
   useEffect(() => {
-    // If the polled status indicates they are now a recruiter or approved, update session
-    if (statusData?.onboardingStatus === 'approved' || statusData?.role === 'recruiter' || statusData?.role === 'admin') {
+    if (!statusData) return;
+
+    const polledRole = statusData.role;
+    const polledStatus = statusData.onboardingStatus;
+
+    // Detect PROMOTION: user was just approved or given recruiter/admin role
+    if (polledStatus === 'approved' || polledRole === 'recruiter' || polledRole === 'admin') {
       if (!isAdmin && !isRecruiter) {
-        update(); // Triggers NextAuth to re-fetch the token and re-hydrate `useAuth`
+        update();
       }
+    }
+
+    // Detect DEMOTION (block): user was downgraded to viewer or status set to rejected
+    if ((isRecruiter || isAdmin) && polledRole === 'viewer') {
+      update();
     }
   }, [statusData, update, isAdmin, isRecruiter]);
 

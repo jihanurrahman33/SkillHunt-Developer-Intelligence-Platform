@@ -73,8 +73,8 @@ export async function PATCH(request) {
       return apiError('userId and role are required', 400);
     }
 
-    if (!['admin', 'recruiter'].includes(role)) {
-      return apiError('Role must be admin or recruiter', 400);
+    if (!['admin', 'recruiter', 'viewer'].includes(role)) {
+      return apiError('Role must be admin, recruiter, or viewer', 400);
     }
 
     // Prevent admin from demoting themselves
@@ -104,5 +104,36 @@ export async function PATCH(request) {
   } catch (error) {
     console.error('Users PATCH error:', error);
     return apiError('Failed to update user role');
+  }
+}
+
+export async function DELETE(request) {
+  const auth = await verifyAuth(request, 'admin');
+  if (auth.error) return auth.error;
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return apiError('userId is required', 400);
+    }
+
+    if (userId === auth.user.id) {
+      return apiError('Cannot delete your own account', 400);
+    }
+
+    const db = await connectToDatabase();
+
+    const result = await db.collection('users').deleteOne({ _id: new ObjectId(userId) });
+
+    if (result.deletedCount === 0) {
+      return apiError('User not found', 404);
+    }
+
+    return apiSuccess({ message: 'User deleted permanently' });
+  } catch (error) {
+    console.error('Users DELETE error:', error);
+    return apiError('Failed to delete user');
   }
 }

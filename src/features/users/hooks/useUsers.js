@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { fetchUsers, updateUserRole, updateUser } from '@/features/users/services/users.service';
+import { fetchUsers, updateUserRole, updateUser, deleteUser } from '@/features/users/services/users.service';
 
 export default function useUsers() {
   const { isAuthenticated, user } = useAuth();
@@ -20,7 +20,7 @@ export default function useUsers() {
   const { data, error, mutate, isLoading } = useSWR(
     isAuthenticated && user?.id ? `/api/users?${queryString}` : null,
     () => fetchUsers(params),
-    { keepPreviousData: true }
+    { keepPreviousData: true, refreshInterval: 5000 }
   );
 
   const users = data?.users || [];
@@ -42,6 +42,42 @@ export default function useUsers() {
     try {
       mutate({ users: users.map((u) => u._id === userId ? { ...u, onboardingStatus: 'rejected' } : u), pagination }, false);
       await updateUser(userId, { onboardingStatus: 'rejected' });
+      mutate();
+      return { success: true };
+    } catch (err) {
+      mutate();
+      return { success: false, error: err.message };
+    }
+  };
+
+  const blockUser = async (userId) => {
+    try {
+      mutate({ users: users.map((u) => u._id === userId ? { ...u, role: 'viewer', onboardingStatus: 'rejected' } : u), pagination }, false);
+      await updateUser(userId, { role: 'viewer', onboardingStatus: 'rejected' });
+      mutate();
+      return { success: true };
+    } catch (err) {
+      mutate();
+      return { success: false, error: err.message };
+    }
+  };
+
+  const unblockUser = async (userId) => {
+    try {
+      mutate({ users: users.map((u) => u._id === userId ? { ...u, role: 'recruiter', onboardingStatus: 'approved' } : u), pagination }, false);
+      await updateUser(userId, { role: 'recruiter', onboardingStatus: 'approved' });
+      mutate();
+      return { success: true };
+    } catch (err) {
+      mutate();
+      return { success: false, error: err.message };
+    }
+  };
+
+  const removeUser = async (userId) => {
+    try {
+      mutate({ users: users.filter((u) => u._id !== userId), pagination: { ...pagination, total: pagination.total - 1 } }, false);
+      await deleteUser(userId);
       mutate();
       return { success: true };
     } catch (err) {
@@ -73,6 +109,9 @@ export default function useUsers() {
     changeRole,
     approveUser,
     rejectUser,
+    blockUser,
+    unblockUser,
+    removeUser,
     reload: () => mutate(),
   };
 }

@@ -268,7 +268,7 @@ export default function DeveloperProfile({ id }) {
               <span className="text-2xl sm:text-3xl font-bold text-white leading-tight">{developer.activityScore}</span>
             </div>
             <div className={`
-              px-2 sm:px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider shadow-sm border
+              px-2.5 sm:px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-md border drop-shadow-md
               ${developer.readinessLevel === 'High' ? 'bg-success border-success text-white' :
                 developer.readinessLevel === 'Medium' ? 'bg-warning border-warning text-black' :
                 'bg-danger border-danger text-white'}
@@ -326,7 +326,7 @@ export default function DeveloperProfile({ id }) {
                 Ingested {new Date(developer.createdAt).toLocaleDateString()}
               </span>
               {developer.addedByName && (
-                <span className="flex items-center gap-1.5 text-primary bg-primary/10 px-2 py-0.5 rounded text-xs font-medium">
+                <span className="flex items-center gap-1.5 text-primary bg-primary/20 border border-primary/30 px-2.5 py-1 rounded-md text-xs font-bold tracking-wide">
                   Added by {developer.addedByName}
                 </span>
               )}
