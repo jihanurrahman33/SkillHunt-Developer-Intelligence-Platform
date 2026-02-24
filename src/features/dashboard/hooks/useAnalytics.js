@@ -8,7 +8,7 @@ import Swal from 'sweetalert2';
 export function useAnalytics() {
   const { isAuthenticated, user } = useAuth();
   
-  const { data, error, mutate, isLoading } = useSWR(
+  const { data, error, mutate, isLoading, isValidating } = useSWR(
     isAuthenticated && user?.id ? `/api/analytics` : null,
     fetchAnalyticsData,
     {
@@ -31,5 +31,5 @@ export function useAnalytics() {
     }
   );
 
-  return { data, loading: isLoading, error: error?.message, refresh: () => mutate() };
+  return { data, loading: isLoading || isValidating, error: error?.message, refresh: () => mutate() };
 }

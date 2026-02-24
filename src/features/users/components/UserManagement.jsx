@@ -4,7 +4,72 @@ import { useState } from 'react';
 import useUsers from '@/features/users/hooks/useUsers';
 import Badge from '@/components/ui/Badge';
 import Swal from 'sweetalert2';
-import { HiOutlineSearch, HiOutlineShieldCheck, HiOutlineUser, HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlineSearch } from 'react-icons/hi';
+import UserCardMobile from './UserCardMobile';
+import UserTableRow from './UserTableRow';
+
+// Helper component to render a section of users
+const UserListSection = ({ title, description, userList, loading, actionProps }) => {
+  if (!loading && userList.length === 0) return null;
+
+  return (
+    <div className="mb-12">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="grid gap-4 sm:hidden">
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border bg-surface p-4 h-32" />
+          ))
+        ) : (
+          userList.map((user) => (
+            <UserCardMobile key={user._id} user={user} {...actionProps} />
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden sm:block overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border bg-secondary/50">
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">User</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Email</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Provider</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Role</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Joined</th>
+              <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {loading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-4 py-3"><div className="h-4 w-32 rounded bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-40 rounded bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-5 w-20 rounded-full bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-24 rounded bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted ml-auto" /></td>
+                </tr>
+              ))
+            ) : (
+              userList.map((user) => (
+                <UserTableRow key={user._id} user={user} {...actionProps} />
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 export default function UserManagement() {
   const {
@@ -196,6 +261,19 @@ export default function UserManagement() {
     );
   }
 
+  const actionProps = {
+    onRoleChange: handleRoleChange,
+    onBlock: handleBlockUser,
+    onUnblock: handleUnblockUser,
+    onDelete: handleDeleteUser,
+    onApprove: approveUser,
+    onReject: rejectUser,
+  };
+
+  // Group users
+  const admins = users.filter((u) => u.role === 'admin');
+  const teamMembers = users.filter((u) => u.role !== 'admin');
+
   return (
     <div>
       {/* Header */}
@@ -213,6 +291,7 @@ export default function UserManagement() {
         )}
       </div>
 
+      {/* Filters */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <HiOutlineSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -257,296 +336,28 @@ export default function UserManagement() {
         </select>
       </div>
 
-      {/* Mobile Card View (shown only on small screens) */}
-      <div className="grid gap-4 sm:hidden">
-        {loading ? (
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse rounded-lg border border-border bg-surface p-4 h-32" />
-          ))
-        ) : users.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
-            No users found.
-          </div>
-        ) : (
-          users.map((user) => (
-            <div key={user._id} className="rounded-xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-primary/50">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary border border-primary/20">
-                    {user.name?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-foreground text-sm truncate">{user.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                  </div>
-                </div>
-                <div className="shrink-0">
-                   <Badge
-                    variant={
-                      user.role === 'admin' ? 'info' : 
-                      user.role === 'recruiter' ? 'default' : 'default'
-                    }
-                    dot
-                    size="sm"
-                  >
-                    {user.role === 'admin' ? 'Admin' : 
-                     user.role === 'recruiter' ? 'Recruiter' : 'Viewer'}
-                  </Badge>
-                  {user.onboardingStatus === 'pending' && (
-                    <div className="mt-1">
-                      <Badge variant="warning" size="sm" className="animate-pulse">Pending</Badge>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Method</span>
-                  <span className="text-xs text-foreground capitalize">{user.provider || 'credentials'}</span>
-                </div>
-                <div className="flex flex-col items-end">
-                   <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Joined</span>
-                   <span className="text-xs text-muted-foreground">
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-3 border-t border-border pt-3">
-                {user.onboardingStatus === 'pending' ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => approveUser(user._id)}
-                      className="flex-1 rounded-lg bg-success/10 py-2 text-xs font-bold text-success transition-colors hover:bg-success hover:text-white"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => rejectUser(user._id)}
-                      className="flex-1 rounded-lg bg-danger/10 py-2 text-xs font-bold text-danger transition-colors hover:bg-danger hover:text-white"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleRoleChange(user._id, user.name, user.role)}
-                      className="flex-1 rounded-lg border border-primary/20 bg-primary/5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
-                    >
-                      {user.role === 'admin' ? 'Demote to Recruiter' : 'Promote to Admin'}
-                    </button>
-                    {user.role === 'recruiter' && (
-                      <button
-                        onClick={() => handleBlockUser(user._id, user.name)}
-                        className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-2 text-xs font-bold text-danger transition-colors hover:bg-danger hover:text-white"
-                      >
-                        Block
-                      </button>
-                    )}
-                    {user.role === 'viewer' && user.onboardingStatus === 'rejected' && (
-                      <button
-                        onClick={() => handleUnblockUser(user._id, user.name)}
-                        className="rounded-lg border border-success/20 bg-success/5 px-4 py-2 text-xs font-bold text-success transition-colors hover:bg-success hover:text-white"
-                      >
-                        Unblock
-                      </button>
-                    )}
-                  </div>
-                )}
-                <button
-                  onClick={() => handleDeleteUser(user._id, user.name)}
-                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-danger/10 bg-danger/5 py-2 text-xs font-bold text-danger transition-colors hover:bg-danger hover:text-white"
-                >
-                  <HiOutlineTrash className="h-3.5 w-3.5" />
-                  Delete User
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Desktop Table View (hidden on small screens) */}
-      <div className="hidden sm:block overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border bg-secondary/50">
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                User
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Provider
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Role
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Joined
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="px-4 py-3"><div className="h-4 w-32 rounded bg-muted" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-40 rounded bg-muted" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted" /></td>
-                  <td className="px-4 py-3"><div className="h-5 w-20 rounded-full bg-muted" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-24 rounded bg-muted" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-16 rounded bg-muted ml-auto" /></td>
-                </tr>
-              ))
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              users.map((user) => (
-                <tr
-                  key={user._id}
-                  className="transition-colors hover:bg-surface-hover"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
-                        {user.name?.charAt(0)?.toUpperCase() || '?'}
-                      </div>
-                      <span className="text-sm font-medium text-foreground">
-                        {user.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {user.email}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs capitalize text-muted-foreground">
-                      {user.provider || 'credentials'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      variant={
-                        user.role === 'admin' ? 'info' : 
-                        user.role === 'recruiter' ? 'success' : 'default'
-                      }
-                      dot
-                    >
-                      {user.role === 'admin' ? (
-                        <span className="flex items-center gap-1">
-                          <HiOutlineShieldCheck className="h-3 w-3" />
-                          Admin
-                        </span>
-                      ) : user.role === 'recruiter' ? (
-                        <span className="flex items-center gap-1">
-                          <HiOutlineUser className="h-3 w-3" />
-                          Recruiter
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1">
-                          <HiOutlineUser className="h-3 w-3" />
-                          Viewer
-                        </span>
-                      )}
-                    </Badge>
-                    {user.onboardingStatus === 'pending' && (
-                      <Badge variant="warning" size="sm" className="ml-2 animate-pulse">Requesting Access</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs text-muted-foreground">
-                      {user.onboardingStatus || '—'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {user.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-3">
-                      {user.onboardingStatus === 'pending' ? (
-                        <>
-                          <button
-                            onClick={() => approveUser(user._id)}
-                            className="text-xs font-bold text-success hover:text-success/80 transition-colors"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => rejectUser(user._id)}
-                            className="text-xs font-bold text-danger hover:text-danger/80 transition-colors"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleRoleChange(user._id, user.name, user.role)}
-                            className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
-                          >
-                            {user.role === 'admin' ? 'Make Recruiter' : 'Make Admin'}
-                          </button>
-                          {user.role === 'recruiter' && (
-                            <>
-                              <span className="text-border">|</span>
-                              <button
-                                onClick={() => handleBlockUser(user._id, user.name)}
-                                className="text-xs font-bold text-danger hover:text-danger/80 transition-colors"
-                              >
-                                Block
-                              </button>
-                            </>
-                          )}
-                          {user.role === 'viewer' && user.onboardingStatus === 'rejected' && (
-                            <>
-                              <span className="text-border">|</span>
-                              <button
-                                onClick={() => handleUnblockUser(user._id, user.name)}
-                                className="text-xs font-bold text-success hover:text-success/80 transition-colors"
-                              >
-                                Unblock
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                      <span className="text-border">|</span>
-                      <button
-                        onClick={() => handleDeleteUser(user._id, user.name)}
-                        className="text-xs font-bold text-danger/60 hover:text-danger transition-colors"
-                        title="Delete User Permanently"
-                      >
-                        <HiOutlineTrash className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {!loading && users.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+          No users found.
+        </div>
+      ) : (
+        <>
+          <UserListSection 
+            title="Administrators" 
+            description="Users with full system access and team management privileges."
+            userList={admins} 
+            loading={loading} 
+            actionProps={actionProps} 
+          />
+          <UserListSection 
+            title="Recruitment Team" 
+            description="Recruiters, analysts, and pending view requests."
+            userList={teamMembers} 
+            loading={loading} 
+            actionProps={actionProps} 
+          />
+        </>
+      )}
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
