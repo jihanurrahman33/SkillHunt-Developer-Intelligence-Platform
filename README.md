@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# SkillHunt IntelliTrack 🎯
 
-## Getting Started
+SkillHunt IntelliTrack is an enterprise-grade Talent Intelligence & Recruitment Orchestration platform. It empowers recruitment teams to source, track, and manage developers globally with real-time signals, engagement readiness scores, and robust campaign funnels.
 
-First, run the development server:
+## 🚀 Key Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 📊 Recruitment Intelligence Dashboard
+- **Pipeline Funnel**: High-fidelity visualization of the recruitment funnel (New ➡️ Hired).
+- **Network Stats**: Real-time KPIs for total talent pool, active campaigns, and placement rates.
+- **Geo-Distribution & Tech Trends**: Analyze talent concentration and tech stack density across the globe.
+- **Top Talent Spotlight**: Automatically highlight "Rising Stars" based on activity and readiness.
+
+### 👥 Global Developer Directory
+- **Unified Registry**: Shared talent pool with system-wide deduplication (Profile Hash).
+- **Readiness Scoring**: Automated AI-driven engagement levels (🟢 High, 🟡 Medium, 🔴 Low) based on GitHub activity signals.
+- **Advanced Filtering**: Search by tech stack, location, readiness, and recruitment status.
+- **Bulk Orchestration**: Perform bulk status updates, campaign assignments, and CSV exports.
+
+### 🎯 Campaign Orchestration
+- **Global Campaign Registry**: Collaborate on professional-grade hiring pipelines.
+- **Placement Tracking**: Monitor conversion rates and pipeline velocity per campaign.
+- **Smart Assignment**: Rapidly assign developers to specific hiring efforts.
+
+### 🤝 Team Coordination & Security
+- **RBAC (Role Based Access Control)**: Secure access for Admins, Recruiters, Analysts, and Viewers.
+- **Onboarding Guard**: Controlled access for new team members with Admin approval flow.
+- **Contact History Lock**: Prevent double-contacting candidates with recruiter-level locks and "Recently Contacted" warnings.
+- **Real-time Notes**: Shared, authorship-locked developer notes with 5-second background sync.
+
+## 🛠 Tech Stack
+
+- **Framework**: [Next.js 16 (Turbopack)](https://nextjs.org/)
+- **Database**: [MongoDB](https://www.mongodb.com/)
+- **State Management & Data Fetching**: [SWR (Stale-While-Revalidate)](https://swr.vercel.app/)
+- **Authentication**: [NextAuth.js](https://next-auth.js.org/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) & [DaisyUI](https://daisyui.com/)
+- **Visualizations**: [Recharts](https://recharts.org/)
+- **Interaction**: [SweetAlert2](https://sweetalert2.github.io/)
+
+## 🏗 Project Structure
+
+```text
+skillhunt/
+├── src/
+│   ├── app/             # Next.js App Router (Routes & Layouts)
+│   ├── components/      # Shared UI primitives (Buttons, Cards, Badges)
+│   ├── features/        # Feature-based modules (Analytics, Auth, Developers, Campaigns, Users)
+│   │   ├── [feature]/
+│   │   │   ├── components/
+│   │   │   ├── services/
+│   │   │   └── hooks/
+│   ├── lib/             # Core utilities, DB connection, and Repositories
+│   ├── providers/       # Global context providers (Auth, UI, Development)
+│   └── proxy.js         # API request boundary and standardizer
+├── scripts/             # Administrative utilities (DB setup, indexing, seeding)
+└── docs/                # SRS, Architecture, and Technical documentation
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Setup & Installation
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 1. Environment Variables
+Create a `.env.local` file in the root directory:
+```env
+MONGODB_URI=your_mongodb_connection_string
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
+GITHUB_TOKEN=your_github_personal_access_token (optional, for higher rate limits)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-## Learn More
+### 3. Initialize Database & Indexes
+Run the setup script to create optimized MongoDB indexes (Compound & Text indexes):
+```bash
+node scripts/setup-db.mjs
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 4. Run Development Server
+```bash
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔐 Architecture Principles
+- **Standardized Repository Pattern**: All database interactions are decoupled from business logic via Repository classes in `src/lib/repositories`.
+- **Request Boundary**: The `src/proxy.js` layer ensures all API responses follow a strict `{ success, data, error }` schema.
+- **Stale-While-Revalidate (SWR)**: Aggressive caching and background polling provide a "real-time" feel without overloading the server.
+- **Dark-First UX**: Premium aesthetic designed for modern talent teams.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+Built with 🎯 by the SkillHunt Engineering Team.
