@@ -14,10 +14,10 @@ export async function PATCH(request, { params }) {
       return apiError('Note text is required', 400);
     }
 
-    const updatedNote = await updateDevNote(noteId, text.trim());
+    const updatedNote = await updateDevNote(noteId, text.trim(), auth.user.id);
     
     if (!updatedNote) {
-      return apiError('Note not found', 404);
+      return apiError('Note not found or you do not have permission to edit it', 403);
     }
 
     return apiSuccess(updatedNote);
@@ -34,10 +34,10 @@ export async function DELETE(request, { params }) {
   try {
     const { noteId } = await params;
     
-    const deleted = await deleteDevNote(noteId);
+    const deleted = await deleteDevNote(noteId, auth.user.id);
 
     if (!deleted) {
-      return apiError('Note not found', 404);
+      return apiError('Note not found or you do not have permission to delete it', 403);
     }
 
     return apiSuccess({ message: 'Note deleted successfully' });

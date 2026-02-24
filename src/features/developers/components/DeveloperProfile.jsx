@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import { 
   fetchDeveloperById, 
   updateDeveloperStatus,
@@ -58,7 +59,8 @@ export default function DeveloperProfile({ id }) {
   const [isUpdating, setIsUpdating] = useState(false);
   
   // Notes State
-  const [notes, setNotes] = useState([]);
+  const { data: notesResponse, mutate: mutateNotes } = useSWR(id ? `/api/developers/${id}/notes` : null, url => fetch(url).then(r => r.json()), { refreshInterval: 5000 });
+  const notes = Array.isArray(notesResponse) ? notesResponse : (notesResponse?.data || []);
   const [newNote, setNewNote] = useState('');
   const [isNoteSubmitting, setIsNoteSubmitting] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -71,13 +73,11 @@ export default function DeveloperProfile({ id }) {
     async function loadData() {
       try {
         setLoading(true);
-        const [devData, notesData, activitiesData] = await Promise.all([
+        const [devData, activitiesData] = await Promise.all([
           fetchDeveloperById(id),
-          getDeveloperNotes(id),
           getDeveloperActivity(id, 50) // Fetch enough for the trend chart
         ]);
         setDeveloper(devData);
-        setNotes(notesData || []);
         setActivities(activitiesData || []);
       } catch (err) {
         setError(err.message);
@@ -133,8 +133,8 @@ export default function DeveloperProfile({ id }) {
 
     setIsNoteSubmitting(true);
     try {
-      const addedNote = await addDeveloperNote(id, newNote);
-      setNotes((prev) => [addedNote, ...prev]);
+      await addDeveloperNote(id, newNote);
+      mutateNotes();
       setNewNote('');
     } catch (err) {
       Swal.fire({
@@ -158,8 +158,8 @@ export default function DeveloperProfile({ id }) {
 
     setIsNoteUpdating(true);
     try {
-      const updated = await updateDeveloperNote(id, noteId, editingNoteText);
-      setNotes((prev) => prev.map((n) => (n._id === noteId ? updated : n)));
+      await updateDeveloperNote(id, noteId, editingNoteText);
+      mutateNotes();
       setEditingNoteId(null);
       setEditingNoteText('');
     } catch (err) {
@@ -195,7 +195,7 @@ export default function DeveloperProfile({ id }) {
     if (confirm.isConfirmed) {
       try {
         await deleteDeveloperNote(id, noteId);
-        setNotes((prev) => prev.filter((n) => n._id !== noteId));
+        mutateNotes();
       } catch (err) {
         Swal.fire({
           title: 'Error!',
@@ -325,6 +325,11 @@ export default function DeveloperProfile({ id }) {
                 <HiOutlineCalendar className="h-4 w-4" />
                 Ingested {new Date(developer.createdAt).toLocaleDateString()}
               </span>
+              {developer.addedByName && (
+                <span className="flex items-center gap-1.5 text-primary bg-primary/10 px-2 py-0.5 rounded text-xs font-medium">
+                  Added by {developer.addedByName}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -536,7 +541,7 @@ export default function DeveloperProfile({ id }) {
                             <HiOutlineClock className="h-3.5 w-3.5" />
                             {new Date(note.createdAt).toLocaleDateString()}
                           </span>
-                          {!isAnalyst && (
+                          {!isAnalyst && note.author?.id === user?.id && (
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={() => { setEditingNoteId(note._id); setEditingNoteText(note.text); }}

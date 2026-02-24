@@ -64,6 +64,7 @@ export async function POST(request) {
       company: githubData.company,
       blog: githubData.blog,
       addedBy: auth.user.id,
+      addedByName: auth.user.name,
       techStack,
       languages: githubData.languages,
       topRepos: githubData.topRepos,

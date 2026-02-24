@@ -58,13 +58,13 @@ export async function getDevNotes(developerId) {
   }));
 }
 
-export async function updateDevNote(noteId, text) {
+export async function updateDevNote(noteId, text, userId) {
   const db = await connectToDatabase();
   
   if (!ObjectId.isValid(noteId)) return null;
 
   const result = await db.collection(COLLECTION).findOneAndUpdate(
-    { _id: new ObjectId(noteId) },
+    { _id: new ObjectId(noteId), "author.id": userId },
     { $set: { text, updatedAt: new Date() } },
     { returnDocument: 'after' }
   );
@@ -78,12 +78,15 @@ export async function updateDevNote(noteId, text) {
   };
 }
 
-export async function deleteDevNote(noteId) {
+export async function deleteDevNote(noteId, userId) {
   const db = await connectToDatabase();
   
   if (!ObjectId.isValid(noteId)) return false;
 
-  const result = await db.collection(COLLECTION).deleteOne({ _id: new ObjectId(noteId) });
+  const result = await db.collection(COLLECTION).deleteOne({ 
+    _id: new ObjectId(noteId),
+    "author.id": userId
+  });
   
   return result.deletedCount > 0;
 }

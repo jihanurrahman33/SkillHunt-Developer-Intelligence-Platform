@@ -22,6 +22,7 @@ export function createDeveloperDocument(data) {
     sourceUrl: data.sourceUrl || `https://github.com/${data.username}`,
     avatarUrl: data.avatarUrl || null,
     addedBy: data.addedBy,
+    addedByName: data.addedByName || null,
 
     // Profile
     bio: data.bio || '',
